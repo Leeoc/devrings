@@ -1,0 +1,36 @@
+{
+ "issues": [
+  {
+   "id": "10001",
+   "key": "ABC-12",
+   "self": "https://acme.atlassian.net/rest/api/3/issue/10001",
+   "fields": {
+    "summary": "Remove the legacy flag",
+    "status": {
+     "name": "Done"
+    },
+    "project": {
+     "key": "ABC",
+     "name": "Acme"
+    }
+   }
+  },
+  {
+   "id": "10002",
+   "key": "ABC-15",
+   "self": "https://acme.atlassian.net/rest/api/3/issue/10002",
+   "fields": {
+    "summary": "Split the sync worker",
+    "status": {
+     "name": "In Review"
+    },
+    "project": {
+     "key": "ABC",
+     "name": "Acme"
+    }
+   }
+  }
+ ],
+ "nextPageToken": "CAEaAggD",
+ "isLast": false
+}

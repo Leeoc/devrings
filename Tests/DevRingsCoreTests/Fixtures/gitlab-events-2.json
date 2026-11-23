@@ -1,0 +1,79 @@
+[
+ {
+  "id": 6007,
+  "project_id": 2,
+  "action_name": "accepted",
+  "target_id": 70007,
+  "target_iid": 22,
+  "target_type": "MergeRequest",
+  "author_id": 7,
+  "target_title": "Synthetic",
+  "created_at": "2026-07-14T13:00:00.000Z",
+  "imported": false,
+  "imported_from": "none",
+  "author_username": "dev"
+ },
+ {
+  "id": 6008,
+  "project_id": 2,
+  "action_name": "commented on",
+  "target_id": 70008,
+  "target_iid": 70008,
+  "target_type": "Note",
+  "author_id": 7,
+  "target_title": "Synthetic",
+  "created_at": "2026-07-14T07:00:00.000Z",
+  "imported": false,
+  "imported_from": "none",
+  "author_username": "dev",
+  "note": {
+   "id": 70008,
+   "noteable_type": "MergeRequest",
+   "noteable_id": 510,
+   "noteable_iid": 10,
+   "type": null
+  }
+ },
+ {
+  "id": 6009,
+  "project_id": 1,
+  "action_name": "approved",
+  "target_id": 70009,
+  "target_iid": 30,
+  "target_type": "MergeRequest",
+  "author_id": 7,
+  "target_title": "Synthetic",
+  "created_at": "2026-07-13T23:10:00.000Z",
+  "imported": false,
+  "imported_from": "none",
+  "author_username": "dev"
+ },
+ {
+  "id": 6010,
+  "project_id": 1,
+  "action_name": "approved",
+  "target_id": 70010,
+  "target_iid": 31,
+  "target_type": "MergeRequest",
+  "author_id": 7,
+  "target_title": "Synthetic",
+  "created_at": "2026-07-14T23:10:00.000Z",
+  "imported": false,
+  "imported_from": "none",
+  "author_username": "dev"
+ },
+ {
+  "id": 6011,
+  "project_id": 1,
+  "action_name": "opened",
+  "target_id": 70011,
+  "target_iid": 50,
+  "target_type": "MergeRequest",
+  "author_id": 7,
+  "target_title": "Synthetic",
+  "created_at": "2026-07-14T14:00:00.000Z",
+  "imported": false,
+  "imported_from": "none",
+  "author_username": "dev"
+ }
+]

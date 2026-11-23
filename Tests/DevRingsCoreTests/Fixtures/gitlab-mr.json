@@ -1,0 +1,35 @@
+{
+ "id": 900010,
+ "iid": 10,
+ "project_id": 1,
+ "title": "Network policies",
+ "description": "",
+ "state": "merged",
+ "created_at": "2026-07-10T09:00:00.000Z",
+ "updated_at": "2026-07-14T10:30:00.000Z",
+ "merged_at": "2026-07-15T09:00:00.000Z",
+ "closed_at": null,
+ "target_branch": "main",
+ "source_branch": "b-10",
+ "author": {
+  "id": 8,
+  "username": "dev",
+  "name": "Dev",
+  "state": "active",
+  "locked": false,
+  "avatar_url": null,
+  "web_url": "https://gitlab.com/dev",
+  "bot": false
+ },
+ "labels": [],
+ "draft": false,
+ "user_notes_count": 2,
+ "upvotes": 0,
+ "downvotes": 0,
+ "references": {
+  "short": "!10",
+  "relative": "!10",
+  "full": "acme/app!10"
+ },
+ "web_url": "https://gitlab.com/acme/app/-/merge_requests/10"
+}

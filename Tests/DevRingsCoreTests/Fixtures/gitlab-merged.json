@@ -1,0 +1,142 @@
+[
+ {
+  "id": 900041,
+  "iid": 41,
+  "project_id": 1,
+  "title": "Add retry to the sync job",
+  "description": "",
+  "state": "merged",
+  "created_at": "2026-07-10T09:00:00.000Z",
+  "updated_at": "2026-07-14T10:30:00.000Z",
+  "merged_at": "2026-07-14T10:02:11.123Z",
+  "closed_at": null,
+  "target_branch": "main",
+  "source_branch": "b-41",
+  "author": {
+   "id": 7,
+   "username": "dev",
+   "name": "Dev",
+   "state": "active",
+   "locked": false,
+   "avatar_url": null,
+   "web_url": "https://gitlab.com/dev",
+   "bot": false
+  },
+  "labels": [],
+  "draft": false,
+  "user_notes_count": 2,
+  "upvotes": 0,
+  "downvotes": 0,
+  "references": {
+   "short": "!41",
+   "relative": "!41",
+   "full": "acme/app!41"
+  },
+  "web_url": "https://gitlab.com/acme/app/-/merge_requests/41"
+ },
+ {
+  "id": 900040,
+  "iid": 40,
+  "project_id": 1,
+  "title": "Merged just after local midnight",
+  "description": "",
+  "state": "merged",
+  "created_at": "2026-07-10T09:00:00.000Z",
+  "updated_at": "2026-07-14T10:30:00.000Z",
+  "merged_at": "2026-07-13T23:30:00.000Z",
+  "closed_at": null,
+  "target_branch": "main",
+  "source_branch": "b-40",
+  "author": {
+   "id": 7,
+   "username": "dev",
+   "name": "Dev",
+   "state": "active",
+   "locked": false,
+   "avatar_url": null,
+   "web_url": "https://gitlab.com/dev",
+   "bot": false
+  },
+  "labels": [],
+  "draft": false,
+  "user_notes_count": 2,
+  "upvotes": 0,
+  "downvotes": 0,
+  "references": {
+   "short": "!40",
+   "relative": "!40",
+   "full": "acme/app!40"
+  },
+  "web_url": "https://gitlab.com/acme/app/-/merge_requests/40"
+ },
+ {
+  "id": 900042,
+  "iid": 42,
+  "project_id": 1,
+  "title": "Merged after midnight the next day",
+  "description": "",
+  "state": "merged",
+  "created_at": "2026-07-10T09:00:00.000Z",
+  "updated_at": "2026-07-14T10:30:00.000Z",
+  "merged_at": "2026-07-14T23:30:00Z",
+  "closed_at": null,
+  "target_branch": "main",
+  "source_branch": "b-42",
+  "author": {
+   "id": 7,
+   "username": "dev",
+   "name": "Dev",
+   "state": "active",
+   "locked": false,
+   "avatar_url": null,
+   "web_url": "https://gitlab.com/dev",
+   "bot": false
+  },
+  "labels": [],
+  "draft": false,
+  "user_notes_count": 2,
+  "upvotes": 0,
+  "downvotes": 0,
+  "references": {
+   "short": "!42",
+   "relative": "!42",
+   "full": "acme/app!42"
+  },
+  "web_url": "https://gitlab.com/acme/app/-/merge_requests/42"
+ },
+ {
+  "id": 900039,
+  "iid": 39,
+  "project_id": 1,
+  "title": "Closed without merging",
+  "description": "",
+  "state": "merged",
+  "created_at": "2026-07-10T09:00:00.000Z",
+  "updated_at": "2026-07-14T10:30:00.000Z",
+  "merged_at": null,
+  "closed_at": null,
+  "target_branch": "main",
+  "source_branch": "b-39",
+  "author": {
+   "id": 7,
+   "username": "dev",
+   "name": "Dev",
+   "state": "active",
+   "locked": false,
+   "avatar_url": null,
+   "web_url": "https://gitlab.com/dev",
+   "bot": false
+  },
+  "labels": [],
+  "draft": false,
+  "user_notes_count": 2,
+  "upvotes": 0,
+  "downvotes": 0,
+  "references": {
+   "short": "!39",
+   "relative": "!39",
+   "full": "acme/app!39"
+  },
+  "web_url": "https://gitlab.com/acme/app/-/merge_requests/39"
+ }
+]

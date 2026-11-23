@@ -1,0 +1,107 @@
+[
+ {
+  "id": 6001,
+  "project_id": 1,
+  "action_name": "commented on",
+  "target_id": 70001,
+  "target_iid": 70001,
+  "target_type": "DiffNote",
+  "author_id": 7,
+  "target_title": "Synthetic",
+  "created_at": "2026-07-14T08:00:00.000Z",
+  "imported": false,
+  "imported_from": "none",
+  "author_username": "dev",
+  "note": {
+   "id": 70001,
+   "noteable_type": "MergeRequest",
+   "noteable_id": 510,
+   "noteable_iid": 10,
+   "type": "DiffNote"
+  }
+ },
+ {
+  "id": 6002,
+  "project_id": 1,
+  "action_name": "commented on",
+  "target_id": 70002,
+  "target_iid": 70002,
+  "target_type": "DiscussionNote",
+  "author_id": 7,
+  "target_title": "Synthetic",
+  "created_at": "2026-07-14T09:00:00.000Z",
+  "imported": false,
+  "imported_from": "none",
+  "author_username": "dev",
+  "note": {
+   "id": 70002,
+   "noteable_type": "MergeRequest",
+   "noteable_id": 510,
+   "noteable_iid": 10,
+   "type": "DiscussionNote"
+  }
+ },
+ {
+  "id": 6003,
+  "project_id": 1,
+  "action_name": "approved",
+  "target_id": 70003,
+  "target_iid": 10,
+  "target_type": "MergeRequest",
+  "author_id": 7,
+  "target_title": "Synthetic",
+  "created_at": "2026-07-14T09:05:00.000Z",
+  "imported": false,
+  "imported_from": "none",
+  "author_username": "dev"
+ },
+ {
+  "id": 6004,
+  "project_id": 1,
+  "action_name": "approved",
+  "target_id": 70004,
+  "target_iid": 10,
+  "target_type": "MergeRequest",
+  "author_id": 7,
+  "target_title": "Synthetic",
+  "created_at": "2026-07-14T12:00:00.000Z",
+  "imported": false,
+  "imported_from": "none",
+  "author_username": "dev"
+ },
+ {
+  "id": 6005,
+  "project_id": 1,
+  "action_name": "commented on",
+  "target_id": 70005,
+  "target_iid": 70005,
+  "target_type": "Note",
+  "author_id": 7,
+  "target_title": "Synthetic",
+  "created_at": "2026-07-14T12:30:00.000Z",
+  "imported": false,
+  "imported_from": "none",
+  "author_username": "dev",
+  "note": {
+   "id": 70005,
+   "noteable_type": "Issue",
+   "noteable_id": 505,
+   "noteable_iid": 5,
+   "type": null
+  }
+ },
+ {
+  "id": 6006,
+  "project_id": 1,
+  "action_name": "pushed to",
+  "target_id": 70006,
+  "target_iid": 70006,
+  "target_type": "Project",
+  "author_id": 7,
+  "target_title": "Synthetic",
+  "created_at": "2026-07-14T12:40:00.000Z",
+  "imported": false,
+  "imported_from": "none",
+  "author_username": "dev"
+ }
+]
