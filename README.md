@@ -115,7 +115,7 @@ They cover the ring, streak, pause and award rules against fixed histories, the 
 
 ## Releasing
 
-Push a tag like `v1.2.0`. The Release workflow runs the tests, builds `DevRings-1.2.0.zip` with `scripts/release.sh`, and publishes a GitHub release with the zip and its SHA-256. Then update `version` and `sha256` in `Casks/devrings.rb` in the tap; `packaging/homebrew/devrings.rb` is the template.
+Push a tag like `v1.2.0`. The Release workflow runs the tests, builds `DevRings-1.2.0.zip` with `scripts/release.sh`, and publishes a GitHub release with the zip and its SHA-256. It then bumps `version` and `sha256` in [the tap's cask](https://github.com/Leeoc/homebrew-tap/blob/main/Casks/devrings.rb), so `brew upgrade` picks it up. That push uses a deploy key with write access to the tap only, stored as the `TAP_DEPLOY_KEY` secret. Only a newly created tag releases.
 
 ## Project layout
 
