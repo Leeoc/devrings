@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      # Build the way local development does: Command Line Tools only, no Xcode.
+      - name: Use the Command Line Tools
+        run: |
+          sudo xcode-select --switch /Library/Developer/CommandLineTools
+          swift --version
+      - uses: actions/cache@v4
+        with:
+          path: .build
+          key: build-${{ runner.os }}-${{ hashFiles('Package.swift') }}-${{ hashFiles('Sources/**', 'Tests/**') }}
+          restore-keys: build-${{ runner.os }}-${{ hashFiles('Package.swift') }}-
+      - name: Build
+        run: swift build -c release --product DevRings
+      - name: Test
+        run: swift run DevRingsCoreTests

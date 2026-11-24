@@ -10,6 +10,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Leeoc/devrings/actions/workflows/ci.yml"><img src="https://github.com/Leeoc/devrings/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+</p>
+
+<p align="center">
   <img src="docs/screenshots/menu.png" width="360" alt="The DevRings menu">
 </p>
 
