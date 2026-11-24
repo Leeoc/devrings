@@ -99,6 +99,13 @@ struct GeneralView: View {
             }
             NotificationSettings(model: model)
             Section {
+                Toggle(isOn: $model.settings.checkForUpdates) {
+                    Text("Check for updates")
+                    Text("Once a day, DevRings asks GitHub for the latest release and shows it in the menu. It never installs anything by itself.")
+                }
+                LabeledContent("Version", value: AppModel.currentVersion)
+            }
+            Section {
                 Toggle("Open at login", isOn: $openAtLogin)
                     .onChange(of: openAtLogin) { _, on in
                         do {

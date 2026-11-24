@@ -183,3 +183,15 @@ private struct FakeHost: CodeHost {
     #expect(JiraCredentials.site(from: "not a site") == nil)
     #expect(Jira.gatewayBase(cloudID: "abc").absoluteString == "https://api.atlassian.com/ex/jira/abc/rest/api/3")
 }
+
+@Test func updateCheckComparesVersionsNumerically() throws {
+    #expect(Updates.isNewer("1.10.0", than: "1.9.3"))
+    #expect(Updates.isNewer("2.0", than: "1.9.9"))
+    #expect(!Updates.isNewer("1.2.0", than: "1.2"))
+    #expect(!Updates.isNewer("1.2.0", than: "1.3.0"))
+    let json = #"{"tag_name":"v1.3.0","html_url":"https://github.com/Leeoc/devrings/releases/tag/v1.3.0","draft":false,"prerelease":false}"#
+    #expect(try Updates.update(from: Data(json.utf8), current: "1.2.0")?.version == "1.3.0")
+    #expect(try Updates.update(from: Data(json.utf8), current: "1.3.0") == nil)
+    let beta = #"{"tag_name":"v2.0.0","html_url":"https://x","prerelease":true}"#
+    #expect(try Updates.update(from: Data(beta.utf8), current: "1.0.0") == nil)
+}

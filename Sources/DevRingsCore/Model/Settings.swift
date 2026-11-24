@@ -34,6 +34,7 @@ public struct Settings: Codable, Hashable, Sendable {
     public var menuBarStyle = MenuBarStyle.colour
     /// Shows how many rings are closed, like "2/3", beside the menu bar icon.
     public var menuBarShowsCount = false
+    public var checkForUpdates = true
     public var notifyClosed = true
     public var notifyBehind = true
     public var behindHour = 15
@@ -56,6 +57,7 @@ public struct Settings: Codable, Hashable, Sendable {
         recapMinute = try c.decodeIfPresent(Int.self, forKey: .recapMinute) ?? d.recapMinute
         menuBarStyle = try c.decodeIfPresent(MenuBarStyle.self, forKey: .menuBarStyle) ?? d.menuBarStyle
         menuBarShowsCount = try c.decodeIfPresent(Bool.self, forKey: .menuBarShowsCount) ?? d.menuBarShowsCount
+        checkForUpdates = try c.decodeIfPresent(Bool.self, forKey: .checkForUpdates) ?? d.checkForUpdates
         notifyClosed = try c.decodeIfPresent(Bool.self, forKey: .notifyClosed) ?? d.notifyClosed
         notifyBehind = try c.decodeIfPresent(Bool.self, forKey: .notifyBehind) ?? d.notifyBehind
         behindHour = try c.decodeIfPresent(Int.self, forKey: .behindHour) ?? d.behindHour
