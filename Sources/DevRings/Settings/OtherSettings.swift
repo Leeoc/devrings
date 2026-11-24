@@ -10,17 +10,7 @@ struct TimeOffView: View {
     var body: some View {
         Form {
             Section {
-                HStack {
-                    ForEach(weekdays, id: \.self) { weekday in
-                        Toggle(Calendar.current.shortWeekdaySymbols[weekday - 1], isOn: Binding(
-                            get: { model.settings.workingDays.contains(weekday) },
-                            set: { on in
-                                if on { model.settings.workingDays.insert(weekday) } else { model.settings.workingDays.remove(weekday) }
-                            }
-                        ))
-                        .toggleStyle(.checkbox)
-                    }
-                }
+                WorkingDaysPicker(model: model)
             } header: {
                 Text("Working days")
             } footer: {
@@ -61,17 +51,35 @@ struct TimeOffView: View {
         .formStyle(.grouped)
     }
 
-    private var weekdays: [Int] {
-        let first = Calendar.current.firstWeekday
-        return (0..<7).map { ($0 + first - 1) % 7 + 1 }
-    }
-
     private func text(for range: PauseRange) -> String {
         let start = LocalDay.start(range.start) ?? .now
         let end = LocalDay.start(range.end) ?? .now
         return range.start == range.end
             ? start.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).year())
             : (start..<end).formatted(.interval.day().month(.abbreviated).year())
+    }
+}
+
+struct WorkingDaysPicker: View {
+    @Bindable var model: AppModel
+
+    var body: some View {
+        HStack {
+            ForEach(weekdays, id: \.self) { weekday in
+                Toggle(Calendar.current.shortWeekdaySymbols[weekday - 1], isOn: Binding(
+                    get: { model.settings.workingDays.contains(weekday) },
+                    set: { on in
+                        if on { model.settings.workingDays.insert(weekday) } else { model.settings.workingDays.remove(weekday) }
+                    }
+                ))
+                .toggleStyle(.checkbox)
+            }
+        }
+    }
+
+    private var weekdays: [Int] {
+        let first = Calendar.current.firstWeekday
+        return (0..<7).map { ($0 + first - 1) % 7 + 1 }
     }
 }
 
@@ -102,6 +110,9 @@ struct GeneralView: View {
                     }
             } footer: {
                 if let loginError { Text(loginError).foregroundStyle(.red) }
+            }
+            Section {
+                Button("Show Welcome…") { model.showOnboarding() }
             }
             Section {
                 LabeledContent("History", value: model.days.count == 1 ? "1 day" : "\(model.days.count) days")

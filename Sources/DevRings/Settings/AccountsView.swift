@@ -3,26 +3,28 @@ import SwiftUI
 
 struct AccountsView: View {
     let model: AppModel
+    var showsCode = true
+    var showsTickets = true
 
     var body: some View {
         Form {
-            if model.gitLab != nil || model.gitHub != nil || model.tracker != nil {
+            if (showsCode && (model.gitLab != nil || model.gitHub != nil)) || (showsTickets && model.tracker != nil) {
                 Section("Connected") {
-                    if model.gitLab != nil {
+                    if showsCode, model.gitLab != nil {
                         AccountRow(provider: "GitLab", account: model.gitLabAccount,
                                    detail: model.gitLabUsesOAuth ? "Signed in" : "Access token", dataUse: .gitLab) {
                             model.disconnectGitLab()
                         }
                     }
-                    if model.gitHub != nil {
+                    if showsCode, model.gitHub != nil {
                         AccountRow(provider: "GitHub", account: model.gitHubAccount, detail: "Access token", dataUse: .gitHub) {
                             model.disconnectGitHub()
                         }
                     }
-                    if model.tracker != nil { JiraConnected(model: model) }
+                    if showsTickets, model.tracker != nil { JiraConnected(model: model) }
                 }
             }
-            if model.gitLab == nil || model.gitHub == nil {
+            if showsCode, model.gitLab == nil || model.gitHub == nil {
                 Section {
                     if model.gitLab == nil { GitLabSetup(model: model) }
                     if model.gitHub == nil { GitHubSetup(model: model) }
@@ -32,7 +34,7 @@ struct AccountsView: View {
                     Text("Fills the Ship and Review rings. Connect one or both; they count toward the same rings.")
                 }
             }
-            if model.tracker == nil {
+            if showsTickets, model.tracker == nil {
                 Section {
                     JiraSetup(model: model)
                 } header: {

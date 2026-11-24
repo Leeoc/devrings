@@ -106,6 +106,7 @@ private func history(_ records: [DayRecord], today: String, settings: Settings =
     let settings = try JSONDecoder().decode(Settings.self, from: Data(#"{"autoPauseIdleDays":false}"#.utf8))
     #expect(settings.menuBarStyle == .colour)
     #expect(!settings.menuBarShowsCount)
+    #expect(!settings.hasOnboarded)
     #expect(!settings.autoPauseIdleDays)
     let roundTrip = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode({ var s = Settings(); s.menuBarStyle = .monochrome; return s }()))
     #expect(roundTrip.menuBarStyle == .monochrome)

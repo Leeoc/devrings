@@ -67,7 +67,7 @@ scripts/bundle.sh          # builds build/DevRings.app and signs it ad hoc
 open build/DevRings.app
 ```
 
-Then open **Settings › Accounts** from the menu:
+On first launch a short welcome walks you through connecting accounts, working days and goals. You can reopen it from Settings › General, or set things up yourself in **Settings › Accounts**:
 
 - **GitLab:** click **Sign In with GitLab…**. A secure sign-in sheet opens, and if you're already signed in to gitlab.com in your browser it's a single click. DevRings asks only for `read_api`, uses OAuth with PKCE, and never holds a client secret. For self-hosted GitLab, choose **Use an access token instead**.
 - **GitHub:** click **Create Token** to open GitHub's fine-grained token page already filled in with read-only access to pull requests, set the resource owner to your organisation for work repositories, then paste the token. GitHub Enterprise Server works too. You can connect GitLab and GitHub together; both count toward the same rings.

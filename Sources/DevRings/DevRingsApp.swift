@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel()
     private var statusItem: StatusItemController?
     private lazy var mainWindow = MainWindowController(model: model)
+    private lazy var onboarding = OnboardingWindowController(model: model) { [weak self] in self?.statusItem?.open() }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = mainMenu()
@@ -31,6 +32,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if kind == .recap { self?.mainWindow.show(.history) } else { statusItem.open() }
         }
         model.start()
+        model.showOnboarding = { [weak self] in self?.onboarding.show() }
+        let firstRun = !model.settings.hasOnboarded && model.codeHosts.isEmpty && !model.isFixture
+        if firstRun || CommandLine.arguments.contains("--onboarding") { onboarding.show() }
         if CommandLine.arguments.contains("--open-menu") {
             Task { statusItem.open() }
         }
