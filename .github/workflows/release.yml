@@ -18,7 +18,10 @@ jobs:
       - name: Use the Command Line Tools
         run: sudo xcode-select --switch /Library/Developer/CommandLineTools
       - name: Test
-        run: swift run DevRingsCoreTests
+        run: |
+          # Newer Command Line Tools ship Swift Testing's interop library outside the framework rpath.
+          interop=$(find /Library/Developer/CommandLineTools -name lib_TestingInterop.dylib 2>/dev/null | head -1)
+          DYLD_LIBRARY_PATH=${interop:+$(dirname "$interop")} swift run DevRingsCoreTests
       - name: Build the release zip
         id: build
         run: |
