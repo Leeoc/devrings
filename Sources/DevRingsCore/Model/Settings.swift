@@ -13,6 +13,15 @@ public struct PauseRange: Codable, Hashable, Sendable, Identifiable {
     public func contains(_ day: String) -> Bool { start <= day && day <= end }
 }
 
+public enum MenuBarStyle: String, Codable, CaseIterable, Sendable {
+    /// The ring colours, as in Fitness.
+    case colour
+    /// One tone that macOS tints to match the other menu bar icons.
+    case monochrome
+    /// Grey until a ring closes, then its colour.
+    case greyUntilClosed
+}
+
 public struct Settings: Codable, Hashable, Sendable {
     public var setup = RingSetup()
     /// `Calendar` weekday numbers, 1 = Sunday.
@@ -22,6 +31,9 @@ public struct Settings: Codable, Hashable, Sendable {
     public var calendarKeyword = "OOO"
     public var recapHour = 8
     public var recapMinute = 30
+    public var menuBarStyle = MenuBarStyle.colour
+    /// Shows how many rings are closed, like "2/3", beside the menu bar icon.
+    public var menuBarShowsCount = false
 
     public init() {}
 
@@ -36,5 +48,7 @@ public struct Settings: Codable, Hashable, Sendable {
         calendarKeyword = try c.decodeIfPresent(String.self, forKey: .calendarKeyword) ?? d.calendarKeyword
         recapHour = try c.decodeIfPresent(Int.self, forKey: .recapHour) ?? d.recapHour
         recapMinute = try c.decodeIfPresent(Int.self, forKey: .recapMinute) ?? d.recapMinute
+        menuBarStyle = try c.decodeIfPresent(MenuBarStyle.self, forKey: .menuBarStyle) ?? d.menuBarStyle
+        menuBarShowsCount = try c.decodeIfPresent(Bool.self, forKey: .menuBarShowsCount) ?? d.menuBarShowsCount
     }
 }

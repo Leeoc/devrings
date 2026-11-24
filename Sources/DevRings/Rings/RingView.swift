@@ -30,6 +30,8 @@ struct RingView: View, @MainActor Animatable {
     var color: Color
     var lineWidth: CGFloat
     var trackOpacity = 0.2
+    /// Draws the ring in its pure colour. The darker start that gives large rings depth just reads as dull at icon size.
+    var flat = false
 
     var animatableData: Double {
         get { progress }
@@ -47,7 +49,7 @@ struct RingView: View, @MainActor Animatable {
         .padding(lineWidth / 2)
     }
 
-    private var start: Color { color.darkened }
+    private var start: Color { flat ? color : color.darkened }
 
     // The stroke uses butt caps and separate cap discs, because an AngularGradient
     // is undefined outside its angle range and would tint the round caps wrongly.

@@ -101,3 +101,12 @@ private func history(_ records: [DayRecord], today: String, settings: Settings =
     days[days.count - 1] = day("2026-11-16", review: 4)
     #expect(history(days, today: "2026-11-16").awards()[.newBest]?.lastEarned == "2026-11-16")
 }
+
+@Test func olderSettingsFilesLoadWithMenuBarDefaults() throws {
+    let settings = try JSONDecoder().decode(Settings.self, from: Data(#"{"autoPauseIdleDays":false}"#.utf8))
+    #expect(settings.menuBarStyle == .colour)
+    #expect(!settings.menuBarShowsCount)
+    #expect(!settings.autoPauseIdleDays)
+    let roundTrip = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode({ var s = Settings(); s.menuBarStyle = .monochrome; return s }()))
+    #expect(roundTrip.menuBarStyle == .monochrome)
+}
