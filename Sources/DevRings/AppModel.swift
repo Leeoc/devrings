@@ -44,6 +44,7 @@ final class AppModel {
     private var refreshAgain = false
     private var pendingRefresh: Task<Void, Never>?
     let isFixture = CommandLine.arguments.contains("--fixture")
+    let notifier = Notifier()
 
     static let historyDays = 365
     static let backfillDays = 30
@@ -113,6 +114,7 @@ final class AppModel {
         } while refreshAgain
         isRefreshing = false
         saveHistory()
+        notifier.check(history)
     }
 
     /// Fills in recent working days the app has never seen, so history isn't empty on day one.

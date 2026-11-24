@@ -33,6 +33,7 @@ Ten comments and two approvals on one MR count as one review. Rings only run on 
 - **History**: a month calendar of mini rings. Click a day to see what you shipped, reviewed and moved. MRs that mention a Jira key link to the ticket, and tickets link back to the MRs that mention them.
 - **Trends**: weekly totals and how often you closed every ring.
 - **Awards**: 3D medals rendered in SceneKit. Hover to tilt them, and click to spin one over and see the date engraved on the back.
+- **Notifications**: a note when you close a ring, a nudge at 15:00 if one is still open, and a morning recap of your last working day with your streak and any awards. Each can be turned off or retimed in Settings › General.
 - **Time off**: pause today, add date ranges, or let a day with no activity count as time off so a forgotten day off doesn't break your streak.
 - **Ticket ring setup**: pick labels, a project and an epic from your Jira site, and preview how many tickets matched on each of your last 10 working days before you set a goal.
 - **Private by design**: no backend and no analytics. Tokens live in the Keychain and history is a JSON file in Application Support.
@@ -109,7 +110,7 @@ scripts/bundle.sh         Builds, renders the app icon, assembles and signs the 
 
 - Goal suggestions that raise or lower a goal based on your last few weeks, as Fitness does
 - A monthly challenge
-- A morning recap notification, and a reveal animation for newly earned awards
+- A reveal animation for newly earned awards
 - Calendar-based time off (for example, all-day "OOO" events)
 - GitHub sign-in with the device flow, and a Linear provider
 - A signed, notarised release and a Homebrew cask

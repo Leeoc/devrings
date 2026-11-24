@@ -89,6 +89,7 @@ struct GeneralView: View {
             } header: {
                 Text("Menu bar")
             }
+            NotificationSettings(model: model)
             Section {
                 Toggle("Open at login", isOn: $openAtLogin)
                     .onChange(of: openAtLogin) { _, on in
@@ -110,5 +111,68 @@ struct GeneralView: View {
             }
         }
         .formStyle(.grouped)
+    }
+}
+
+private struct NotificationSettings: View {
+    @Bindable var model: AppModel
+
+    var body: some View {
+        Section {
+            switch model.notifier.authorization {
+            case .notDetermined:
+                HStack {
+                    Text("Get a note when you close a ring, a nudge if you're behind, and a morning recap.")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Turn On Notifications…") {
+                        Task {
+                            await model.notifier.requestPermission()
+                            model.notifier.check(model.history)
+                        }
+                    }
+                }
+            case .denied:
+                HStack {
+                    Text("Notifications are off for DevRings in System Settings.").foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Open System Settings…") {
+                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!)
+                    }
+                }
+            default:
+                Toggle("When you close a ring", isOn: $model.settings.notifyClosed)
+                Toggle(isOn: $model.settings.notifyBehind) {
+                    Text("Nudge if you're behind")
+                    Text("Only on working days, and only if a ring is still open.")
+                }
+                if model.settings.notifyBehind {
+                    DatePicker("Nudge at", selection: time(\.behindHour, \.behindMinute), displayedComponents: .hourAndMinute)
+                }
+                Toggle(isOn: $model.settings.notifyRecap) {
+                    Text("Morning recap")
+                    Text("How your last working day went, with your streak and any awards.")
+                }
+                if model.settings.notifyRecap {
+                    DatePicker("Recap at", selection: time(\.recapHour, \.recapMinute), displayedComponents: .hourAndMinute)
+                }
+            }
+        } header: {
+            Text("Notifications")
+        }
+        .task {
+            // Permission can change in System Settings while the window is closed.
+            await model.notifier.updateAuthorization()
+        }
+    }
+
+    private func time(_ hour: WritableKeyPath<DevRingsCore.Settings, Int>, _ minute: WritableKeyPath<DevRingsCore.Settings, Int>) -> Binding<Date> {
+        Binding {
+            Calendar.current.date(bySettingHour: model.settings[keyPath: hour], minute: model.settings[keyPath: minute], second: 0, of: .now) ?? .now
+        } set: { date in
+            let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+            model.settings[keyPath: hour] = c.hour ?? 0
+            model.settings[keyPath: minute] = c.minute ?? 0
+        }
     }
 }
