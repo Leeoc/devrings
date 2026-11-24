@@ -1,0 +1,10 @@
+name: Feature request
+description: An idea for DevRings.
+labels: [enhancement]
+body:
+  - type: textarea
+    attributes:
+      label: What would you like?
+      description: The problem it solves for you matters more than the exact solution.
+    validations:
+      required: true
