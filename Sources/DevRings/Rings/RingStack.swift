@@ -44,12 +44,13 @@ struct RingStack: View {
     /// Overrides each ring's colour, for the menu bar's monochrome and grey styles.
     var tint: ((RingResult) -> Color)?
     var flat = false
+    var waitsForLayout = false
 
     @State private var revealed: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(rings: [RingResult], paused: Bool, lineWidth: CGFloat, gap: CGFloat, trackOpacity: Double = 0.2, animated: Bool = true,
-         tint: ((RingResult) -> Color)? = nil, flat: Bool = false) {
+         tint: ((RingResult) -> Color)? = nil, flat: Bool = false, waitsForLayout: Bool = false) {
         self.rings = rings
         self.paused = paused
         self.lineWidth = lineWidth
@@ -57,6 +58,7 @@ struct RingStack: View {
         self.trackOpacity = trackOpacity
         self.tint = tint
         self.flat = flat
+        self.waitsForLayout = waitsForLayout
         _revealed = State(initialValue: !animated)
     }
 
@@ -72,12 +74,16 @@ struct RingStack: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
-        // Starts after the first layout pass; flipping it during onAppear made the spring animate the view's
-        // initial positioning too, sliding the tracks in from the side.
-        .task {
+        .onAppear {
             guard !revealed else { return }
-            try? await Task.sleep(for: .milliseconds(60))
-            revealed = true
+            // In a menu, state changed after onAppear isn't drawn until the menu closes, so the fill has to start
+            // here. Views that rebuild in place, like the settings previews, wait for layout instead: starting in
+            // onAppear there also animated their position, sliding the tracks in from the side.
+            if waitsForLayout {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) { revealed = true }
+            } else {
+                revealed = true
+            }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)

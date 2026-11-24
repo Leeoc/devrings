@@ -29,7 +29,7 @@ enum MenuBarIcon {
                       animated: Bool = false) -> some View {
         RingStack(rings: day.rings, paused: day.pause != nil, lineWidth: size * 0.135, gap: size * 0.03,
                   trackOpacity: style == .monochrome ? 0.28 : 0.22, animated: animated,
-                  tint: tint(style, paused: day.pause != nil, ink: ink), flat: true)
+                  tint: tint(style, paused: day.pause != nil, ink: ink), flat: true, waitsForLayout: animated)
             .frame(width: size, height: size)
     }
 
