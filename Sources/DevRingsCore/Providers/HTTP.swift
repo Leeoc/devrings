@@ -6,7 +6,7 @@ public enum ProviderError: LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .unauthorized(let provider): "\(provider) didn't accept your credentials."
+        case .unauthorized(let provider): "\(provider) didn't accept your credentials. They may have expired; reconnect in Settings › Accounts."
         case .http(let status, let provider): "\(provider) returned an error (\(status))."
         }
     }

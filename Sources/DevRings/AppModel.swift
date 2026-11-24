@@ -31,6 +31,8 @@ final class AppModel {
     var gitLabAccount: AccountInfo?
     private(set) var gitLabUsesOAuth = false
     var jiraAccount: AccountInfo?
+    /// What's needed to show and replace the Jira connection, without keeping the token in memory here.
+    private(set) var jiraConnection: (email: String, usesScopedToken: Bool)?
     private(set) var jiraSite: URL?
     private var projectKeys: Set<String>?
 
@@ -66,6 +68,7 @@ final class AppModel {
         let jira = Keychain.load(JiraCredentials.self, account: "jira")
         tracker = jira.map { Jira($0) }
         jiraSite = jira?.site
+        jiraConnection = jira.map { ($0.email, $0.apiBase != nil) }
         Task { await loadAccounts() }
         Task {
             await refresh()
@@ -210,10 +213,17 @@ final class AppModel {
         jiraAccount = account
         tracker = Jira(credentials)
         jiraSite = credentials.site
+        jiraConnection = (credentials.email, credentials.apiBase != nil)
         labelsCache = nil
         projectsCache = nil
         projectKeys = nil
         await refresh()
+    }
+
+    /// Swaps in a new token for the same site and email, for when the old one expires.
+    func replaceJiraToken(_ token: String) async throws {
+        guard let site = jiraSite, let email = jiraConnection?.email else { return }
+        try await connectJira(site: site, email: email, token: token)
     }
 
     func disconnectJira() {
@@ -221,6 +231,7 @@ final class AppModel {
         tracker = nil
         jiraAccount = nil
         jiraSite = nil
+        jiraConnection = nil
     }
 
     /// OAuth access tokens last two hours; each refresh replaces the stored refresh token, which GitLab

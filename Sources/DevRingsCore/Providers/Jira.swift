@@ -65,6 +65,11 @@ public struct Jira: WorkTracker {
         }
     }
 
+    /// Whether `site` is a Jira Cloud site, via Atlassian's public tenant lookup. No credentials needed.
+    public static func siteExists(_ site: URL) async -> Bool {
+        (try? await gateway(for: site)) != nil
+    }
+
     private static func gateway(for site: URL) async throws -> URL {
         struct Tenant: Decodable { let cloudId: String }
         let data = try await HTTP(provider: "Jira", headers: [:]).get(site.appending(path: "_edge/tenant_info")).0
