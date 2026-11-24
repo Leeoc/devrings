@@ -28,8 +28,9 @@ final class AppModel {
 
     private(set) var codeHost: (any CodeHost)?
     private(set) var tracker: (any WorkTracker)?
-    var gitLabUser: String?
-    var jiraUser: String?
+    var gitLabAccount: AccountInfo?
+    private(set) var gitLabUsesOAuth = false
+    var jiraAccount: AccountInfo?
     private(set) var jiraSite: URL?
     private var projectKeys: Set<String>?
 
@@ -59,11 +60,13 @@ final class AppModel {
 
     func start() {
         guard !isFixture else { return }
-        codeHost = Keychain.load(GitLabCredentials.self, account: "gitlab").map { GitLab($0) }
+        let gitLab = Keychain.load(GitLabCredentials.self, account: "gitlab")
+        codeHost = gitLab.map(Self.gitLab)
+        gitLabUsesOAuth = gitLab?.isOAuth ?? false
         let jira = Keychain.load(JiraCredentials.self, account: "jira")
         tracker = jira.map { Jira($0) }
         jiraSite = jira?.site
-        Task { await loadAccountNames() }
+        Task { await loadAccounts() }
         Task {
             await refresh()
             await backfill()
@@ -174,26 +177,38 @@ final class AppModel {
 
     // MARK: Accounts
 
+    /// Opens GitLab's sign-in page in a secure browser sheet, then connects with the tokens it returns.
+    func signInWithGitLab() async throws {
+        let request = GitLabOAuth.request()
+        let callback = try await WebSignIn().callback(for: request.url, scheme: GitLabOAuth.callbackScheme)
+        try await connectGitLab(try await GitLabOAuth.signIn(request, callback: callback))
+    }
+
     func connectGitLab(_ credentials: GitLabCredentials) async throws {
-        let host = GitLab(credentials)
-        gitLabUser = try await host.username()
+        let host = Self.gitLab(credentials)
+        gitLabAccount = try await host.account()
         try Keychain.save(credentials, account: "gitlab")
         codeHost = host
+        gitLabUsesOAuth = credentials.isOAuth
         await refresh()
         await backfill()
     }
 
     func disconnectGitLab() {
+        if let host = codeHost as? GitLab {
+            Task { await GitLabOAuth.revoke(await host.currentCredentials) }
+        }
         Keychain.delete(account: "gitlab")
         codeHost = nil
-        gitLabUser = nil
+        gitLabAccount = nil
+        gitLabUsesOAuth = false
     }
 
-    func connectJira(_ credentials: JiraCredentials) async throws {
-        let jira = Jira(credentials)
-        jiraUser = try await jira.displayName()
+    func connectJira(site: URL, email: String, token: String) async throws {
+        let (credentials, account) = try await Jira.connect(site: site, email: email, token: token)
         try Keychain.save(credentials, account: "jira")
-        tracker = jira
+        jiraAccount = account
+        tracker = Jira(credentials)
         jiraSite = credentials.site
         labelsCache = nil
         projectsCache = nil
@@ -204,13 +219,19 @@ final class AppModel {
     func disconnectJira() {
         Keychain.delete(account: "jira")
         tracker = nil
-        jiraUser = nil
+        jiraAccount = nil
         jiraSite = nil
     }
 
-    private func loadAccountNames() async {
-        gitLabUser = try? await codeHost?.username()
-        jiraUser = try? await tracker?.displayName()
+    /// OAuth access tokens last two hours; each refresh replaces the stored refresh token, which GitLab
+    /// invalidates once it's used.
+    private static func gitLab(_ credentials: GitLabCredentials) -> GitLab {
+        GitLab(credentials) { refreshed in try? Keychain.save(refreshed, account: "gitlab") }
+    }
+
+    private func loadAccounts() async {
+        gitLabAccount = try? await codeHost?.account()
+        jiraAccount = try? await tracker?.account()
         if tracker != nil, let projects = try? await trackerProjects() { projectKeys = Set(projects.map(\.key)) }
     }
 

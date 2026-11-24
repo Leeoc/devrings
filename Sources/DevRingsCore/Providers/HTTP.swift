@@ -28,6 +28,17 @@ struct HTTP: Sendable {
         return try await send(request).0
     }
 
+    func post(_ url: URL, form: [String: String]) async throws -> Data {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        var body = URLComponents()
+        body.queryItems = form.map { URLQueryItem(name: $0.key, value: $0.value) }
+        // URLComponents leaves "+" alone, which a form body would read as a space.
+        request.httpBody = Data((body.percentEncodedQuery ?? "").replacingOccurrences(of: "+", with: "%2B").utf8)
+        return try await send(request).0
+    }
+
     private func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         var request = request
         request.setValue("application/json", forHTTPHeaderField: "Accept")

@@ -68,7 +68,7 @@ private func fixture(_ name: String) throws -> Data {
 
 private struct FakeHost: CodeHost {
     var reviewFails = false
-    func username() async throws -> String { "dev" }
+    func account() async throws -> AccountInfo { AccountInfo(name: "Dev") }
     func mergedMRs(on day: String) async throws -> [RingItem] {
         [RingItem(ref: "!1", title: "New", url: URL(string: "https://x")!)]
     }
@@ -105,4 +105,59 @@ private struct FakeHost: CodeHost {
     #expect(title("Draft: :bug: (PAY-1) fix", ["PAY-1"]) == "Draft: fix")
     #expect(title("(PAY-1)", ["PAY-1"]) == "(PAY-1)")
     #expect(title("Plain title") == "Plain title")
+}
+
+@Test func pkceChallengeMatchesSHA256OfTheVerifier() {
+    // Expected value computed independently with Python's hashlib.
+    #expect(GitLabOAuth.challenge(for: "dBjftJeZ4CVP-mJ92K1RW-5Bf43_tVa3WNCcPCOB-g") == "Tp1z-npv-CiVcOoTT1DD4BkIhvVp_CIRYid29XjfXFM")
+    #expect(GitLabOAuth.random().count == 43)
+    #expect(GitLabOAuth.random() != GitLabOAuth.random())
+}
+
+@Test func authorizeURLCarriesPKCEAndState() {
+    let request = GitLabOAuth.request(verifier: "v", state: "s")
+    let items = URLComponents(url: request.url, resolvingAgainstBaseURL: false)!.queryItems!
+    func value(_ name: String) -> String? { items.first { $0.name == name }?.value }
+    #expect(request.url.path() == "/oauth/authorize")
+    #expect(value("code_challenge_method") == "S256")
+    #expect(value("code_challenge") == GitLabOAuth.challenge(for: "v"))
+    #expect(value("state") == "s")
+    #expect(value("redirect_uri") == "devrings://oauth")
+    #expect(value("scope") == "read_api")
+}
+
+@Test func callbackParsingChecksStateAndErrors() throws {
+    #expect(try GitLabOAuth.code(from: URL(string: "devrings://oauth?code=abc&state=s")!, state: "s") == "abc")
+    #expect(throws: SignInError.stateMismatch) { try GitLabOAuth.code(from: URL(string: "devrings://oauth?code=abc&state=x")!, state: "s") }
+    #expect(throws: SignInError.denied("The user denied access")) {
+        try GitLabOAuth.code(from: URL(string: "devrings://oauth?error=access_denied&error_description=The%20user%20denied%20access&state=s")!, state: "s")
+    }
+    #expect(throws: SignInError.missingCode) { try GitLabOAuth.code(from: URL(string: "devrings://oauth?state=s")!, state: "s") }
+}
+
+@Test func tokenResponseBecomesOAuthCredentials() throws {
+    let json = #"{"access_token":"at","token_type":"Bearer","expires_in":7200,"refresh_token":"rt","scope":"read_api","created_at":1800000000}"#
+    let credentials = try GitLabOAuth.credentials(from: Data(json.utf8))
+    #expect(credentials.isOAuth)
+    #expect(credentials.headers == ["Authorization": "Bearer at"])
+    #expect(credentials.expiresAt == Date(timeIntervalSince1970: 1_800_007_200))
+    #expect(GitLabCredentials(token: "pat").headers == ["PRIVATE-TOKEN": "pat"])
+}
+
+@Test func storedTokenCredentialsStillDecode() throws {
+    let old = #"{"host":"https://gitlab.com","token":"pat"}"#
+    let decoded = try JSONDecoder().decode(GitLabCredentials.self, from: Data(old.utf8))
+    #expect(!decoded.isOAuth)
+    let jira = try JSONDecoder().decode(JiraCredentials.self, from: Data(#"{"site":"https://a.atlassian.net","email":"e","token":"t"}"#.utf8))
+    #expect(jira.apiBase == nil)
+}
+
+@Test func jiraSiteAcceptsShortAndFullForms() {
+    #expect(JiraCredentials.site(from: "acme")?.absoluteString == "https://acme.atlassian.net")
+    #expect(JiraCredentials.site(from: " Acme.atlassian.net ")?.absoluteString == "https://acme.atlassian.net")
+    #expect(JiraCredentials.site(from: "https://acme.atlassian.net/jira/your-work")?.absoluteString == "https://acme.atlassian.net")
+    #expect(JiraCredentials.site(from: "jira.example.com")?.absoluteString == "https://jira.example.com")
+    #expect(JiraCredentials.site(from: "") == nil)
+    #expect(JiraCredentials.site(from: "not a site") == nil)
+    #expect(Jira.gatewayBase(cloudID: "abc").absoluteString == "https://api.atlassian.com/ex/jira/abc/rest/api/3")
 }

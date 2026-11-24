@@ -54,7 +54,7 @@ Ten comments and two approvals on one MR count as one review. Rings only run on 
 
 - macOS 14 Sonoma or later
 - Swift 6 with the Command Line Tools. Full Xcode isn't needed.
-- A GitLab personal access token with the `read_api` scope (gitlab.com or self-hosted)
+- A GitLab account: gitlab.com sign-in, or a personal access token with `read_api` for self-hosted
 - For the ticket ring, a Jira Cloud site with your email address and an API token
 
 ## Build and run
@@ -66,7 +66,12 @@ scripts/bundle.sh          # builds build/DevRings.app and signs it ad hoc
 open build/DevRings.app
 ```
 
-Then open **Settings › Accounts** from the menu and connect GitLab, plus Jira if you want a ticket ring. The app fills in your last 30 working days so History isn't empty on day one.
+Then open **Settings › Accounts** from the menu:
+
+- **GitLab:** click **Sign In with GitLab…**. A secure sign-in sheet opens, and if you're already signed in to gitlab.com in your browser it's a single click. DevRings asks only for `read_api`, uses OAuth with PKCE, and never holds a client secret. For self-hosted GitLab, choose **Use an access token instead**.
+- **Jira Cloud** (only needed for a ticket ring): enter your site (`your-team` is enough), your email and an [API token](https://id.atlassian.com/manage-profile/security/api-tokens). Atlassian doesn't offer app sign-in for Jira Cloud yet. Classic tokens work as they are; a scoped token needs `read:jira-work` and `read:jira-user`.
+
+Tokens are kept in your Keychain. Once GitLab is connected, the app fills in your last 30 working days so History isn't empty on day one.
 
 To see the app with made-up data and no accounts:
 
