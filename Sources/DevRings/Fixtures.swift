@@ -43,8 +43,10 @@ enum Fixtures {
                 for i in record.rings.indices {
                     let count = Int(generator.next() % UInt64(ceilings[i] + 1))
                     let first = Int(generator.next() % 6)
-                    record.rings[i].items = (0..<count).map { n in
-                        item(record.rings[i].id.kind, (first + n) % 6, at: start.addingTimeInterval(Double(9 + n * 2) * 3600 + Double(n * 17 * 60)))
+                    let kind = record.rings[i].id.kind
+                    record.rings[i].items = (0..<count).map { (n: Int) -> RingItem in
+                        let seconds = Double(9 + n * 2) * 3600 + Double(n * 17 * 60)
+                        return item(kind, (first + n) % 6, at: start.addingTimeInterval(seconds))
                     }
                 }
             }
