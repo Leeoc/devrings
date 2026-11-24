@@ -1,8 +1,12 @@
 #!/bin/bash
 # Builds DevRings.app into build/ and signs it (UserNotifications and SMAppService need a signed bundle).
 # Uses the "DevRings Dev" certificate from scripts/dev-cert.sh when it's there, otherwise signs ad hoc.
+# VERSION, BUILD and SIGN_IDENTITY override the defaults; scripts/release.sh sets them.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+version=${VERSION:-0.1.0}
+build=${BUILD:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}
 
 swift build -c release --product DevRings
 app=build/DevRings.app
@@ -13,7 +17,7 @@ rm -rf build/AppIcon.iconset
 .build/release/DevRings --render-icon build/AppIcon.iconset
 iconutil -c icns build/AppIcon.iconset -o "$app/Contents/Resources/AppIcon.icns"
 
-cat > "$app/Contents/Info.plist" <<'PLIST'
+cat > "$app/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -23,8 +27,8 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
     <key>CFBundleIdentifier</key><string>com.leeoconnell.devrings</string>
     <key>CFBundleName</key><string>DevRings</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>0.1</string>
-    <key>CFBundleVersion</key><string>1</string>
+    <key>CFBundleShortVersionString</key><string>$version</string>
+    <key>CFBundleVersion</key><string>$build</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>LSUIElement</key><true/>
     <key>NSHighResolutionCapable</key><true/>
@@ -32,7 +36,10 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-identity=-
-if security find-certificate -c "DevRings Dev" >/dev/null 2>&1; then identity="DevRings Dev"; fi
+identity=${SIGN_IDENTITY:-}
+if [ -z "$identity" ]; then
+    identity=-
+    if security find-certificate -c "DevRings Dev" >/dev/null 2>&1; then identity="DevRings Dev"; fi
+fi
 codesign --force --sign "$identity" "$app"
 echo "$app"

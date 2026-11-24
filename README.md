@@ -62,6 +62,20 @@ Ten comments and two approvals on one MR count as one review. Rings only run on 
 - A GitLab account (gitlab.com sign-in, or a personal access token with `read_api` for self-hosted), a GitHub account with a read-only token, or both
 - For the ticket ring, a Jira Cloud site with your email address and an API token
 
+## Install
+
+```sh
+brew install --cask leeoc/tap/devrings
+```
+
+Releases are signed ad hoc rather than notarised by Apple, so the cask clears macOS's quarantine flag after installing. If you download the zip from Releases yourself, do the same once before opening it:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/DevRings.app
+```
+
+DevRings needs an Apple silicon Mac on macOS 14 or later.
+
 ## Build and run
 
 ```sh
@@ -98,6 +112,10 @@ swift run DevRingsCoreTests
 
 They cover the ring, streak, pause and award rules against fixed histories, the JQL builder, and GitLab, GitHub and Jira parsing against recorded API responses.
 
+## Releasing
+
+Push a tag like `v1.2.0`. The Release workflow runs the tests, builds `DevRings-1.2.0.zip` with `scripts/release.sh`, and publishes a GitHub release with the zip and its SHA-256. Then update `version` and `sha256` in `Casks/devrings.rb` in the tap; `packaging/homebrew/devrings.rb` is the template.
+
 ## Project layout
 
 ```
@@ -120,7 +138,6 @@ scripts/bundle.sh         Builds, renders the app icon, assembles and signs the 
 - A reveal animation for newly earned awards
 - Calendar-based time off (for example, all-day "OOO" events)
 - GitHub sign-in with the device flow, and a Linear provider
-- A signed, notarised release and a Homebrew cask
 
 ## Licence
 
