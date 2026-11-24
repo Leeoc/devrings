@@ -67,9 +67,12 @@ Ten comments and two approvals on one MR count as one review. Rings only run on 
 ```sh
 git clone git@github.com:Leeoc/devrings.git
 cd devrings
-scripts/bundle.sh          # builds build/DevRings.app and signs it ad hoc
+scripts/dev-cert.sh        # once: a local signing certificate, so rebuilds don't re-ask for Keychain access
+scripts/bundle.sh          # builds and signs build/DevRings.app
 open build/DevRings.app
 ```
+
+`dev-cert.sh` adds a self-signed "DevRings Dev" certificate to your login keychain. Without it, builds are signed ad hoc, which gives each build a new identity, so macOS asks again for access to DevRings' tokens after every rebuild.
 
 On first launch a short welcome walks you through connecting accounts, working days and goals. You can reopen it from Settings › General, or set things up yourself in **Settings › Accounts**:
 
