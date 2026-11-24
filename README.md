@@ -139,6 +139,10 @@ scripts/bundle.sh         Builds, renders the app icon, assembles and signs the 
 - Calendar-based time off (for example, all-day "OOO" events)
 - GitHub sign-in with the device flow, and a Linear provider
 
+## Contributing
+
+DevRings is a one-person project for now, so I'm not taking pull requests or feature requests. You're welcome to use it, fork it and build on it under the licence.
+
 ## Licence
 
 [MIT](LICENSE)
