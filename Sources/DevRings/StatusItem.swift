@@ -39,7 +39,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func observeModel() {
         withObservationTracking {
-            _ = (model.days, model.settings, model.errors, model.lastRefresh, model.isRefreshing)
+            _ = (model.days, model.settings, model.errors, model.lastRefresh, model.isRefreshing, model.availableUpdate)
         } onChange: { [weak self] in
             Task { @MainActor in
                 self?.updateIcon()
@@ -72,6 +72,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         for error in model.errors {
             let item = NSMenuItem(title: error, action: nil, keyEquivalent: "")
             item.isEnabled = false
+            menu.addItem(item)
+        }
+        if let update = model.availableUpdate {
+            let item = action("Update Available: \(update.version)…", #selector(openLink(_:)))
+            item.representedObject = update.page
+            item.toolTip = "Opens the release page. With Homebrew, run brew upgrade devrings."
             menu.addItem(item)
         }
         menu.addItem(action(day.pause == nil ? "Pause Today" : "Resume Today", #selector(togglePause)))

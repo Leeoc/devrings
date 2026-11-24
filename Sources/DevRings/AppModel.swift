@@ -21,6 +21,8 @@ final class AppModel {
         didSet { settingsChanged(from: oldValue) }
     }
     var lastRefresh: Date?
+    var availableUpdate: AvailableUpdate?
+    private var lastUpdateCheck: Date?
     var errors: [String] = []
     var isRefreshing = false
     var backfillRemaining = 0
@@ -116,6 +118,7 @@ final class AppModel {
         } while refreshAgain
         isRefreshing = false
         saveHistory()
+        await checkForUpdateDaily()
         notifier.check(history)
     }
 
@@ -147,6 +150,23 @@ final class AppModel {
     private var missingAccounts: [String] {
         (codeHosts.isEmpty ? ["Connect GitLab or GitHub in Settings › Accounts."] : [])
             + (tracker == nil && settings.setup.ticket != nil ? ["Jira isn't connected."] : [])
+    }
+
+    // MARK: Updates
+
+    static var currentVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+    }
+
+    private func checkForUpdateDaily() async {
+        guard settings.checkForUpdates else {
+            availableUpdate = nil
+            return
+        }
+        guard lastUpdateCheck.map({ Date.now.timeIntervalSince($0) > 86_400 }) ?? true else { return }
+        lastUpdateCheck = .now
+        // Fails quietly: no network, or no public release yet.
+        availableUpdate = try? await Updates.check(current: Self.currentVersion)
     }
 
     // MARK: Today
