@@ -9,6 +9,8 @@ permissions:
 
 jobs:
   release:
+    # Only a newly pushed tag releases; the tag ruleset also stops existing v* tags being moved.
+    if: github.event.created
     runs-on: macos-26
     timeout-minutes: 20
     steps:
@@ -34,3 +36,21 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" "${{ steps.build.outputs.zip }}" --generate-notes \
             --notes "Install with \`brew trust --cask leeoc/tap/devrings && brew install --cask leeoc/tap/devrings\`. SHA-256: \`${{ steps.build.outputs.sha256 }}\`"
+      - name: Bump the Homebrew cask
+        env:
+          TAP_DEPLOY_KEY: ${{ secrets.TAP_DEPLOY_KEY }}
+          SHA256: ${{ steps.build.outputs.sha256 }}
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          key=$RUNNER_TEMP/tap_key
+          printf '%s\n' "$TAP_DEPLOY_KEY" > "$key"
+          chmod 600 "$key"
+          export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          git clone --depth 1 git@github.com:Leeoc/homebrew-tap.git "$RUNNER_TEMP/tap"
+          cd "$RUNNER_TEMP/tap"
+          sed -i '' -e "s/^  version \".*\"/  version \"$version\"/" -e "s/^  sha256 \".*\"/  sha256 \"$SHA256\"/" Casks/devrings.rb
+          git diff --exit-code --quiet && { echo "Cask already at $version"; exit 0; }
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -qam ":arrow_up: devrings $version"
+          git push -q
+          rm -f "$key"
