@@ -4,10 +4,10 @@ public enum Refresher {
     /// Builds the record for `day`. A ring whose provider fails keeps its items from `previous`,
     /// so one bad token doesn't zero the rest of the day.
     public static func record(for day: String, setup: RingSetup, previous: DayRecord?,
-                              codeHost: (any CodeHost)?, tracker: (any WorkTracker)?) async -> (record: DayRecord, errors: [String]) {
+                              codeHosts: [any CodeHost], tracker: (any WorkTracker)?) async -> (record: DayRecord, errors: [String]) {
         let ticketRing = setup.ticket
-        async let ship = attempt { try await codeHost?.mergedMRs(on: day) }
-        async let review = attempt { try await codeHost?.reviewedMRs(on: day) }
+        async let ship = attempt { try await combined(codeHosts) { try await $0.mergedMRs(on: day) } }
+        async let review = attempt { try await combined(codeHosts) { try await $0.reviewedMRs(on: day) } }
         async let tickets = attempt {
             guard let ticketRing else { return nil }
             return try await tracker?.ticketsMoved(on: day, matching: ticketRing.filter)
@@ -30,6 +30,13 @@ public enum Refresher {
             return RingResult(id: id, name: name, goal: goal, items: items)
         }
         return (DayRecord(date: day, rings: results, pause: previous?.pause), errors)
+    }
+
+    private static func combined(_ hosts: [any CodeHost], _ fetch: @Sendable (any CodeHost) async throws -> [RingItem]) async throws -> [RingItem]? {
+        guard !hosts.isEmpty else { return nil }
+        var items: [RingItem] = []
+        for host in hosts { items += try await fetch(host) }
+        return items
     }
 
     private static func attempt(_ fetch: @Sendable () async throws -> [RingItem]?) async -> Result<[RingItem]?, any Error> {

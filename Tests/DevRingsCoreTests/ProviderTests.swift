@@ -35,6 +35,28 @@ private func fixture(_ name: String) throws -> Data {
     #expect(mr.item.title == "Network policies")
 }
 
+@Test func gitHubMergedKeepsOnlyPRsMergedOnTheLocalDay() throws {
+    let items = try GitHub.merged(from: fixture("github-merged.json"), on: "2026-07-14", calendar: london)
+    #expect(items.map(\.ref) == ["acme/app#41", "acme/api#7"])
+    #expect(items[0].shortRef == "#41")
+    #expect(items[0].project == "acme/app")
+    #expect(items[0].date != nil)
+}
+
+@Test func gitHubReviewCountsTeammatesPRsOncePerDay() throws {
+    let items = try GitHub.reviewed(from: fixture("github-reviewed.json"), on: "2026-07-14", calendar: london)
+    #expect(items.map(\.ref) == ["acme/api#9", "acme/app#50", "acme/web#3"])
+    #expect(items.first?.date == Date(timeIntervalSince1970: 1_784_016_000))
+}
+
+@Test func gitHubQueryErrorsSurface() {
+    #expect(throws: GitHubError.query("Bad credentials")) {
+        try GitHub.decode(String.self, from: Data(#"{"data":null,"errors":[{"message":"Bad credentials"}]}"#.utf8))
+    }
+    #expect(GitHubCredentials(token: "t").graphQL.absoluteString == "https://api.github.com/graphql")
+    #expect(GitHubCredentials(host: URL(string: "https://ghe.acme.com")!, token: "t").graphQL.absoluteString == "https://ghe.acme.com/api/graphql")
+}
+
 @Test func jiraSearchPageParsesItemsAndNextToken() throws {
     let page = try Jira.searchPage(from: fixture("jira-search.json"))
     let site = URL(string: "https://acme.atlassian.net")!
@@ -83,7 +105,7 @@ private struct FakeHost: CodeHost {
     var previous = setup.emptyRecord(for: "2026-07-14")
     previous.rings[1].items = [RingItem(ref: "!9", title: "Earlier", url: URL(string: "https://x")!)]
     let (record, errors) = await Refresher.record(for: "2026-07-14", setup: setup, previous: previous,
-                                                  codeHost: FakeHost(reviewFails: true), tracker: nil)
+                                                  codeHosts: [FakeHost(reviewFails: true)], tracker: nil)
     #expect(record.rings.map(\.count) == [1, 1])
     #expect(record.rings[1].items[0].ref == "!9")
     #expect(errors == ["GitLab returned an error (500)."])

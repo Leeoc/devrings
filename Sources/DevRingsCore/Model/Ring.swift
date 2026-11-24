@@ -26,7 +26,7 @@ public struct RingItem: Codable, Hashable, Sendable {
 
     /// `!123` for MRs, the key for tickets.
     public var shortRef: String {
-        ref.lastIndex(of: "!").map { String(ref[$0...]) } ?? ref
+        ref.lastIndex { $0 == "!" || $0 == "#" }.map { String(ref[$0...]) } ?? ref
     }
 }
 

@@ -15,14 +15,14 @@
 
 ## Why
 
-Commit graphs reward volume. DevRings rewards a balanced day: getting your own work merged, unblocking your teammates with reviews, and chipping away at the tickets you care about, such as tech debt or bugs. It fills itself in from GitLab and Jira, and everything stays on your Mac.
+Commit graphs reward volume. DevRings rewards a balanced day: getting your own work merged, unblocking your teammates with reviews, and chipping away at the tickets you care about, such as tech debt or bugs. It fills itself in from GitLab or GitHub, and Jira, and everything stays on your Mac.
 
 ## The rings
 
 | Ring | Counts | Default goal |
 |---|---|---|
-| 🔴 **Ship** | Your own merge requests merged that day | 3 |
-| 🔵 **Review** | Teammates' MRs you commented on, approved or merged, once per MR per day | 3 |
+| 🔴 **Ship** | Your own merge or pull requests merged that day | 3 |
+| 🔵 **Review** | Teammates' MRs or PRs you commented on, approved or reviewed, once per MR or PR per day | 3 |
 | 🟢 **Ticket ring** (optional) | Tickets you moved that day that match a filter you build from Jira labels, projects and epics, or raw JQL | 2 |
 
 Ten comments and two approvals on one MR count as one review. Rings only run on your working days, and a streak is consecutive working days with every ring closed.
@@ -54,7 +54,7 @@ Ten comments and two approvals on one MR count as one review. Rings only run on 
 
 - macOS 14 Sonoma or later
 - Swift 6 with the Command Line Tools. Full Xcode isn't needed.
-- A GitLab account: gitlab.com sign-in, or a personal access token with `read_api` for self-hosted
+- A GitLab account (gitlab.com sign-in, or a personal access token with `read_api` for self-hosted), a GitHub account with a read-only token, or both
 - For the ticket ring, a Jira Cloud site with your email address and an API token
 
 ## Build and run
@@ -69,9 +69,10 @@ open build/DevRings.app
 Then open **Settings › Accounts** from the menu:
 
 - **GitLab:** click **Sign In with GitLab…**. A secure sign-in sheet opens, and if you're already signed in to gitlab.com in your browser it's a single click. DevRings asks only for `read_api`, uses OAuth with PKCE, and never holds a client secret. For self-hosted GitLab, choose **Use an access token instead**.
+- **GitHub:** click **Create Token** to open GitHub's fine-grained token page already filled in with read-only access to pull requests, set the resource owner to your organisation for work repositories, then paste the token. GitHub Enterprise Server works too. You can connect GitLab and GitHub together; both count toward the same rings.
 - **Jira Cloud** (only needed for a ticket ring): enter your site (`your-team` is enough), your email and an [API token](https://id.atlassian.com/manage-profile/security/api-tokens). Atlassian doesn't offer app sign-in for Jira Cloud yet. Classic tokens work as they are; a scoped token needs `read:jira-work` and `read:jira-user`.
 
-Tokens are kept in your Keychain. Once GitLab is connected, the app fills in your last 30 working days so History isn't empty on day one.
+Tokens are kept in your Keychain. Once a code host is connected, the app fills in your last 30 working days so History isn't empty on day one.
 
 To see the app with made-up data and no accounts:
 
@@ -87,7 +88,7 @@ open build/DevRings.app --args --fixture --open-window history
 swift run DevRingsCoreTests
 ```
 
-They cover the ring, streak, pause and award rules against fixed histories, the JQL builder, and GitLab and Jira parsing against recorded API responses.
+They cover the ring, streak, pause and award rules against fixed histories, the JQL builder, and GitLab, GitHub and Jira parsing against recorded API responses.
 
 ## Project layout
 
@@ -95,7 +96,7 @@ They cover the ring, streak, pause and award rules against fixed histories, the 
 Sources/DevRingsCore/     Rules, models, storage and providers (Foundation only, fully testable)
   Model/                  Rings, days, settings, ticket filters
   Rules/                  History (working days, pauses, streaks) and awards
-  Providers/              CodeHost + GitLab, WorkTracker + Jira, Keychain, HTTP
+  Providers/              CodeHost + GitLab and GitHub, WorkTracker + Jira, Keychain, HTTP
 Sources/DevRings/         The SwiftUI and AppKit app
   StatusItem.swift        Menu bar icon and menu
   History/  Awards/       Main window panes
@@ -110,11 +111,11 @@ scripts/bundle.sh         Builds, renders the app icon, assembles and signs the 
 - A monthly challenge
 - A morning recap notification, and a reveal animation for newly earned awards
 - Calendar-based time off (for example, all-day "OOO" events)
-- GitHub and Linear providers. The `CodeHost` and `WorkTracker` protocols are ready for them.
+- GitHub sign-in with the device flow, and a Linear provider
 - A signed, notarised release and a Homebrew cask
 
 ## Licence
 
 [MIT](LICENSE)
 
-DevRings isn't affiliated with Apple, GitLab or Atlassian.
+DevRings isn't affiliated with Apple, GitLab, GitHub or Atlassian.

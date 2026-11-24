@@ -26,10 +26,13 @@ final class AppModel {
     var backfillRemaining = 0
     var pane: Pane = .history
 
-    private(set) var codeHost: (any CodeHost)?
+    private(set) var gitLab: (any CodeHost)?
+    private(set) var gitHub: GitHub?
+    var codeHosts: [any CodeHost] { [gitLab, gitHub].compactMap { $0 } }
     private(set) var tracker: (any WorkTracker)?
     var gitLabAccount: AccountInfo?
     private(set) var gitLabUsesOAuth = false
+    var gitHubAccount: AccountInfo?
     var jiraAccount: AccountInfo?
     /// What's needed to show and replace the Jira connection, without keeping the token in memory here.
     private(set) var jiraConnection: (email: String, usesScopedToken: Bool)?
@@ -63,7 +66,8 @@ final class AppModel {
     func start() {
         guard !isFixture else { return }
         let gitLab = Keychain.load(GitLabCredentials.self, account: "gitlab")
-        codeHost = gitLab.map(Self.gitLab)
+        self.gitLab = gitLab.map(Self.gitLab)
+        gitHub = Keychain.load(GitHubCredentials.self, account: "github").map { GitHub($0) }
         gitLabUsesOAuth = gitLab?.isOAuth ?? false
         let jira = Keychain.load(JiraCredentials.self, account: "jira")
         tracker = jira.map { Jira($0) }
@@ -102,7 +106,7 @@ final class AppModel {
             refreshAgain = false
             let day = todayKey
             let (record, errors) = await Refresher.record(for: day, setup: settings.setup, previous: days[day],
-                                                          codeHost: codeHost, tracker: tracker)
+                                                          codeHosts: codeHosts, tracker: tracker)
             days[day] = record
             self.errors = errors + missingAccounts
             if errors.isEmpty { lastRefresh = .now }
@@ -112,15 +116,23 @@ final class AppModel {
     }
 
     /// Fills in recent working days the app has never seen, so history isn't empty on day one.
-    func backfill() async {
-        guard codeHost != nil else { return }
+    /// `refetch` redoes days already recorded too, for when a newly connected account adds to them.
+    func backfill(refetch: Bool = false) async {
+        guard !codeHosts.isEmpty else { return }
         let missing = (1...Self.backfillDays).compactMap { LocalDay.adding(-$0, to: todayKey) }
-            .filter { history.isWorkingDay($0) && days[$0] == nil }
+            .filter { history.isWorkingDay($0) && (refetch || days[$0] == nil) }
         backfillRemaining = missing.count
         for day in missing {
-            let (record, errors) = await Refresher.record(for: day, setup: settings.setup, previous: nil,
-                                                          codeHost: codeHost, tracker: tracker)
+            var (record, errors) = await Refresher.record(for: day, setup: settings.setup, previous: days[day],
+                                                          codeHosts: codeHosts, tracker: tracker)
             guard errors.isEmpty else { break }
+            if let recorded = days[day] {
+                record.rings = recorded.rings.map { ring in
+                    var ring = ring
+                    ring.items = record.rings.first { $0.id == ring.id }?.items ?? ring.items
+                    return ring
+                }
+            }
             days[day] = record
             backfillRemaining -= 1
         }
@@ -129,7 +141,7 @@ final class AppModel {
     }
 
     private var missingAccounts: [String] {
-        (codeHost == nil ? ["GitLab isn't connected."] : [])
+        (codeHosts.isEmpty ? ["Connect GitLab or GitHub in Settings › Accounts."] : [])
             + (tracker == nil && settings.setup.ticket != nil ? ["Jira isn't connected."] : [])
     }
 
@@ -191,20 +203,35 @@ final class AppModel {
         let host = Self.gitLab(credentials)
         gitLabAccount = try await host.account()
         try Keychain.save(credentials, account: "gitlab")
-        codeHost = host
+        gitLab = host
         gitLabUsesOAuth = credentials.isOAuth
         await refresh()
-        await backfill()
+        await backfill(refetch: true)
     }
 
     func disconnectGitLab() {
-        if let host = codeHost as? GitLab {
+        if let host = gitLab as? GitLab {
             Task { await GitLabOAuth.revoke(await host.currentCredentials) }
         }
         Keychain.delete(account: "gitlab")
-        codeHost = nil
+        gitLab = nil
         gitLabAccount = nil
         gitLabUsesOAuth = false
+    }
+
+    func connectGitHub(_ credentials: GitHubCredentials) async throws {
+        let host = GitHub(credentials)
+        gitHubAccount = try await host.account()
+        try Keychain.save(credentials, account: "github")
+        gitHub = host
+        await refresh()
+        await backfill(refetch: true)
+    }
+
+    func disconnectGitHub() {
+        Keychain.delete(account: "github")
+        gitHub = nil
+        gitHubAccount = nil
     }
 
     func connectJira(site: URL, email: String, token: String) async throws {
@@ -241,7 +268,8 @@ final class AppModel {
     }
 
     private func loadAccounts() async {
-        gitLabAccount = try? await codeHost?.account()
+        gitLabAccount = try? await gitLab?.account()
+        gitHubAccount = try? await gitHub?.account()
         jiraAccount = try? await tracker?.account()
         if tracker != nil, let projects = try? await trackerProjects() { projectKeys = Set(projects.map(\.key)) }
     }
