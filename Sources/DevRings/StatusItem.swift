@@ -4,7 +4,7 @@ import SwiftUI
 
 @MainActor
 final class StatusItemController: NSObject, NSMenuDelegate {
-    private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+    private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let menu = NSMenu()
     private let header = NSMenuItem()
     private let model: AppModel
@@ -14,18 +14,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         self.model = model
         self.openWindow = openWindow
         super.init()
-        if let button = item.button {
-            let icon = PassthroughHostingView(rootView: MenuBarRings(model: model))
-            icon.translatesAutoresizingMaskIntoConstraints = false
-            button.addSubview(icon)
-            NSLayoutConstraint.activate([
-                icon.centerXAnchor.constraint(equalTo: button.centerXAnchor),
-                icon.centerYAnchor.constraint(equalTo: button.centerYAnchor),
-                icon.widthAnchor.constraint(equalToConstant: 18),
-                icon.heightAnchor.constraint(equalToConstant: 18),
-            ])
-            button.setAccessibilityLabel("DevRings")
-        }
+        item.button?.imagePosition = .imageLeading
+        item.button?.font = .monospacedDigitSystemFont(ofSize: NSFont.menuBarFont(ofSize: 0).pointSize, weight: .regular)
+        updateIcon()
         menu.delegate = self
         menu.addItem(header)
         item.menu = menu
@@ -51,10 +42,21 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             _ = (model.days, model.settings, model.errors, model.lastRefresh, model.isRefreshing)
         } onChange: { [weak self] in
             Task { @MainActor in
+                self?.updateIcon()
                 self?.rebuildRows()
                 self?.observeModel()
             }
         }
+    }
+
+    private func updateIcon() {
+        guard let button = item.button else { return }
+        let day = model.today
+        let settings = model.settings
+        button.image = MenuBarIcon.image(for: day, style: settings.menuBarStyle)
+        button.title = settings.menuBarShowsCount ? MenuBarIcon.count(day) : ""
+        let closed = day.rings.filter(\.isClosed).count
+        button.setAccessibilityLabel(day.pause != nil ? "DevRings, paused" : "DevRings, \(closed) of \(day.rings.count) rings closed")
     }
 
     /// Everything below the rings header, which stays put so its animation isn't cut short.
@@ -194,9 +196,4 @@ struct MenuHeader: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-}
-
-/// Lets clicks fall through to the status bar button underneath.
-private final class PassthroughHostingView<Content: View>: NSHostingView<Content> {
-    override func hitTest(_ point: NSPoint) -> NSView? { nil }
 }

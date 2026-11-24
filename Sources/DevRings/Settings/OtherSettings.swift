@@ -76,12 +76,19 @@ struct TimeOffView: View {
 }
 
 struct GeneralView: View {
-    let model: AppModel
+    @Bindable var model: AppModel
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginError: String?
 
     var body: some View {
         Form {
+            Section {
+                MenuBarStylePicker(day: model.today, selection: $model.settings.menuBarStyle,
+                                   showsCount: model.settings.menuBarShowsCount)
+                Toggle("Show rings closed beside the icon", isOn: $model.settings.menuBarShowsCount)
+            } header: {
+                Text("Menu bar")
+            }
             Section {
                 Toggle("Open at login", isOn: $openAtLogin)
                     .onChange(of: openAtLogin) { _, on in
