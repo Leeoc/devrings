@@ -110,3 +110,59 @@ private func history(_ records: [DayRecord], today: String, settings: Settings =
     let roundTrip = try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode({ var s = Settings(); s.menuBarStyle = .monochrome; return s }()))
     #expect(roundTrip.menuBarStyle == .monochrome)
 }
+
+private func at(_ day: String, _ hour: Int, _ minute: Int = 0) -> Date {
+    calendar.date(byAdding: DateComponents(hour: hour, minute: minute), to: LocalDay.start(day, calendar: calendar)!)!
+}
+
+@Test func closingARingNotifiesOnceAndAllRingsReplacesTheLast() {
+    let thursday = [day("2026-11-05"), day("2026-11-06", ship: 1, review: 0)]
+    let h = history(thursday, today: "2026-11-06")
+    let notices = h.notices(at: at("2026-11-06", 11), sent: ["recap"])
+    #expect(notices.map(\.id) == ["closed-ship"])
+    #expect(notices[0].title == "You closed Ship")
+    #expect(notices[0].body == "1 of 1 merged today.")
+    #expect(h.notices(at: at("2026-11-06", 11), sent: ["recap", "closed-ship"]).isEmpty)
+
+    let perfect = history([day("2026-11-05"), day("2026-11-06")], today: "2026-11-06")
+    let all = perfect.notices(at: at("2026-11-06", 11), sent: ["recap", "closed-ship"])
+    #expect(all.map(\.id) == ["closed-all"])
+    #expect(all[0].body == "That's 2 days in a row.")
+    #expect(perfect.noticeIDsCovered(by: all[0]) == ["closed-all", "closed-ship", "closed-review"])
+}
+
+@Test func nudgeWaitsForItsTimeAndNamesWhatsLeft() {
+    let h = history([day("2026-11-06", ship: 0, review: 0)], today: "2026-11-06")
+    #expect(h.notices(at: at("2026-11-06", 14, 59), sent: ["recap"]).isEmpty)
+    let nudge = h.notices(at: at("2026-11-06", 15), sent: ["recap"])
+    #expect(nudge.map(\.title) == ["Two rings to go"])
+    #expect(nudge[0].body == "1 more to merge and 1 more to review. There's still time.")
+    #expect(h.notices(at: at("2026-11-06", 16), sent: ["recap", "behind"]).isEmpty)
+}
+
+@Test func pausedAndNonWorkingDaysStayQuiet() {
+    let paused = history([day("2026-11-06", ship: 0, review: 0, pause: .manual)], today: "2026-11-06")
+    #expect(paused.notices(at: at("2026-11-06", 16), sent: []).isEmpty)
+    let saturday = history([day("2026-11-07", ship: 5, review: 0)], today: "2026-11-07")
+    #expect(saturday.notices(at: at("2026-11-07", 16), sent: []).isEmpty)
+    var off = Settings()
+    (off.notifyClosed, off.notifyBehind, off.notifyRecap) = (false, false, false)
+    #expect(history([day("2026-11-06", review: 0)], today: "2026-11-06", settings: off).notices(at: at("2026-11-06", 16), sent: []).isEmpty)
+}
+
+@Test func recapCoversTheLastCountedDayAndSkipsIdleOnes() {
+    // Friday was idle, so Monday's recap is about Thursday.
+    let days = [day("2026-11-05", review: 0), day("2026-11-06", ship: 0, review: 0), day("2026-11-09", ship: 0, review: 0)]
+    let h = history(days, today: "2026-11-09")
+    #expect(h.notices(at: at("2026-11-09", 8, 29), sent: []).isEmpty)
+    let recap = h.notices(at: at("2026-11-09", 8, 30), sent: [], awardTitle: { _ in "First Ring" })
+    #expect(recap.map(\.title) == ["Thursday: 1 of 2 rings closed"])
+    #expect(recap[0].body == "You earned First Ring. Today, give Review a push.")
+
+    let perfect = history([day("2026-11-06"), day("2026-11-09", ship: 0, review: 0)], today: "2026-11-09")
+    let good = perfect.notices(at: at("2026-11-09", 9), sent: [], awardTitle: { $0 == .perfectDay ? "Perfect Day" : "x" })
+    #expect(good[0].title == "Friday: every ring closed")
+    #expect(good[0].body.hasPrefix("You earned "))
+    #expect(good[0].body.contains("Perfect Day"))
+    #expect(good[0].body.hasSuffix("Your streak is 1 day."))
+}

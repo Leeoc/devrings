@@ -27,6 +27,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = mainMenu()
         let statusItem = StatusItemController(model: model) { [weak self] pane in self?.mainWindow.show(pane) }
         self.statusItem = statusItem
+        model.notifier.onOpen = { [weak self] kind in
+            if kind == .recap { self?.mainWindow.show(.history) } else { statusItem.open() }
+        }
         model.start()
         if CommandLine.arguments.contains("--open-menu") {
             Task { statusItem.open() }
