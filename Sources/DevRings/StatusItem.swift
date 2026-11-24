@@ -177,9 +177,9 @@ private struct RingRowColumns {
 private extension RingID {
     var caption: String {
         switch self {
-        case .ship: "MRs merged"
-        case .review: "teammates' MRs reviewed"
-        case .ticket: "tickets moved"
+        case .ship: "merged"
+        case .review: "reviewed"
+        case .ticket: "moved"
         }
     }
 }
