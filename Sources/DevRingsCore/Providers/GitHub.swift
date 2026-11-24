@@ -4,10 +4,13 @@ public struct GitHubCredentials: Codable, Sendable, Equatable {
     /// https://github.com, or a GitHub Enterprise Server address.
     public var host: URL
     public var token: String
+    /// True for a token from "Sign In with GitHub", false or absent for a pasted personal access token.
+    public var signedIn: Bool?
 
-    public init(host: URL = URL(string: "https://github.com")!, token: String) {
+    public init(host: URL = URL(string: "https://github.com")!, token: String, signedIn: Bool? = nil) {
         self.host = host
         self.token = token
+        self.signedIn = signedIn
     }
 
     var graphQL: URL {

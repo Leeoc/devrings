@@ -195,3 +195,16 @@ private struct FakeHost: CodeHost {
     let beta = #"{"tag_name":"v2.0.0","html_url":"https://x","prerelease":true}"#
     #expect(try Updates.update(from: Data(beta.utf8), current: "1.0.0") == nil)
 }
+
+@Test func gitHubDeviceFlowParsesCodeAndPollResults() throws {
+    let code = try GitHubSignIn.code(from: Data(#"{"device_code":"dc","user_code":"WDJB-MJHT","verification_uri":"https://github.com/login/device","expires_in":900,"interval":5}"#.utf8))
+    #expect(code.userCode == "WDJB-MJHT")
+    #expect(code.verificationURI.absoluteString == "https://github.com/login/device")
+    #expect(try GitHubSignIn.poll(Data(#"{"error":"authorization_pending"}"#.utf8)) == .pending)
+    #expect(try GitHubSignIn.poll(Data(#"{"error":"slow_down","interval":10}"#.utf8)) == .slowDown(10))
+    #expect(try GitHubSignIn.poll(Data(#"{"access_token":"gho_x","token_type":"bearer","scope":"repo"}"#.utf8)) == .token("gho_x"))
+    #expect(throws: GitHubSignInError.denied) { try GitHubSignIn.poll(Data(#"{"error":"access_denied"}"#.utf8)) }
+    #expect(throws: GitHubSignInError.expired) { try GitHubSignIn.poll(Data(#"{"error":"expired_token"}"#.utf8)) }
+    let stored = try JSONDecoder().decode(GitHubCredentials.self, from: Data(#"{"host":"https://github.com","token":"t"}"#.utf8))
+    #expect(stored.signedIn == nil)
+}

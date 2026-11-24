@@ -35,6 +35,7 @@ final class AppModel {
     var gitLabAccount: AccountInfo?
     private(set) var gitLabUsesOAuth = false
     var gitHubAccount: AccountInfo?
+    private(set) var gitHubSignedIn = false
     var jiraAccount: AccountInfo?
     /// What's needed to show and replace the Jira connection, without keeping the token in memory here.
     private(set) var jiraConnection: (email: String, usesScopedToken: Bool)?
@@ -72,7 +73,9 @@ final class AppModel {
         guard !isFixture else { return }
         let gitLab = Keychain.load(GitLabCredentials.self, account: "gitlab")
         self.gitLab = gitLab.map(Self.gitLab)
-        gitHub = Keychain.load(GitHubCredentials.self, account: "github").map { GitHub($0) }
+        let gitHubCredentials = Keychain.load(GitHubCredentials.self, account: "github")
+        gitHub = gitHubCredentials.map { GitHub($0) }
+        gitHubSignedIn = gitHubCredentials?.signedIn == true
         gitLabUsesOAuth = gitLab?.isOAuth ?? false
         let jira = Keychain.load(JiraCredentials.self, account: "jira")
         tracker = jira.map { Jira($0) }
@@ -248,6 +251,7 @@ final class AppModel {
         gitHubAccount = try await host.account()
         try Keychain.save(credentials, account: "github")
         gitHub = host
+        gitHubSignedIn = credentials.signedIn == true
         await refresh()
         await backfill(refetch: true)
     }
@@ -256,6 +260,7 @@ final class AppModel {
         Keychain.delete(account: "github")
         gitHub = nil
         gitHubAccount = nil
+        gitHubSignedIn = false
     }
 
     func connectJira(site: URL, email: String, token: String) async throws {
