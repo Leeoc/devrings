@@ -17,7 +17,8 @@ struct AccountsView: View {
                         }
                     }
                     if showsCode, model.gitHub != nil {
-                        AccountRow(provider: "GitHub", account: model.gitHubAccount, detail: "Access token", dataUse: .gitHub) {
+                        AccountRow(provider: "GitHub", account: model.gitHubAccount,
+                                   detail: model.gitHubSignedIn ? "Signed in" : "Access token", dataUse: .gitHub) {
                             model.disconnectGitHub()
                         }
                     }
@@ -134,40 +135,88 @@ private struct GitLabSetup: View {
 
 private struct GitHubSetup: View {
     let model: AppModel
+    @State private var useToken = !GitHubSignIn.isConfigured
     @State private var host = "https://github.com"
     @State private var token = ""
+    @State private var code: GitHubSignIn.Code?
+    @State private var signIn: Task<Void, Never>?
     @State private var error: String?
     @State private var working = false
 
     var body: some View {
         ProviderSetup(name: "GitHub", summary: "github.com or Enterprise Server", error: error) {
+            if GitHubSignIn.isConfigured {
+                if let code {
+                    approval(code)
+                } else {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Sign in to github.com")
+                            Text("You'll approve DevRings on GitHub with a one-time code.").font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        if working && !useToken { ProgressView().controlSize(.small) }
+                        Button("Sign In with GitHub…", action: startSignIn)
+                            .buttonStyle(.borderedProminent)
+                            .disabled(working)
+                    }
+                }
+            }
+            DisclosureGroup(GitHubSignIn.isConfigured ? "Use a token instead" : "Access token", isExpanded: $useToken) {
                 VStack(alignment: .leading, spacing: 6) {
                     step(1, "Open GitHub's new token page, already filled in.") {
                         if let url = tokenPage { Link("Create Token", destination: url).font(.callout) }
                     }
                     step(2, "For work repositories, set **Resource owner** to your organisation.")
                     step(3, "Choose **Generate token**, then paste it below.")
-                    Text("It can only read pull requests. Some organisations approve new tokens before they work.")
+                    Text("For GitHub Enterprise Server, or if you'd rather give read-only access. Some organisations approve new tokens before they work.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.leading, 26)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.vertical, 4)
+                TextField("Server", text: $host)
                 LabeledContent("Token") {
                     SecureField("Token", text: $token, prompt: Text("github_pat_…"))
                         .labelsHidden()
                 }
-                DisclosureGroup("GitHub Enterprise Server") {
-                    TextField("Server", text: $host)
-                }
                 HStack {
                     Spacer()
-                    if working { ProgressView().controlSize(.small) }
-                    Button("Connect", action: connect)
+                    if working && useToken { ProgressView().controlSize(.small) }
+                    Button("Connect", action: connectWithToken)
                         .disabled(token.isEmpty || working)
                 }
-                DataUse(.gitHub)
+            }
+            DataUse(.gitHub)
         }
+        .onDisappear { signIn?.cancel() }
+    }
+
+    private func approval(_ code: GitHubSignIn.Code) -> some View {
+        VStack(spacing: 10) {
+            Text("Enter this code on GitHub").foregroundStyle(.secondary)
+            Text(code.userCode)
+                .font(.system(size: 28, weight: .semibold, design: .monospaced))
+                .textSelection(.enabled)
+                .accessibilityLabel("Code \(code.userCode.map(String.init).joined(separator: " "))")
+            HStack {
+                Button("Cancel") {
+                    signIn?.cancel()
+                    self.code = nil
+                    working = false
+                }
+                Button("Copy Code and Open GitHub") { open(code) }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+            }
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text("Waiting for you to approve on GitHub…").font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
     }
 
     private var tokenPage: URL? {
@@ -179,7 +228,35 @@ private struct GitHubSetup: View {
         ])
     }
 
-    private func connect() {
+    private func open(_ code: GitHubSignIn.Code) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(code.userCode, forType: .string)
+        NSWorkspace.shared.open(code.verificationURI)
+    }
+
+    private func startSignIn() {
+        working = true
+        error = nil
+        signIn = Task {
+            defer {
+                working = false
+                code = nil
+            }
+            do {
+                let code = try await GitHubSignIn.start()
+                self.code = code
+                open(code)
+                let credentials = try await GitHubSignIn.waitForApproval(code)
+                try await model.connectGitHub(credentials)
+            } catch is CancellationError {
+                return
+            } catch {
+                self.error = Self.message(for: error)
+            }
+        }
+    }
+
+    private func connectWithToken() {
         guard let server = httpsURL(host) else {
             error = "Enter the server's https:// address."
             return
@@ -193,11 +270,16 @@ private struct GitHubSetup: View {
                 token = ""
             } catch ProviderError.unauthorized {
                 error = "GitHub didn't accept that token. Check it hasn't expired and has read access to pull requests."
-            } catch is URLError {
-                error = "Couldn't reach \(server.host() ?? "GitHub"). Check the address and your connection."
             } catch {
-                self.error = error.localizedDescription
+                self.error = Self.message(for: error)
             }
+        }
+    }
+
+    private static func message(for error: any Error) -> String {
+        switch error {
+        case is URLError: "Couldn't reach GitHub. Check the address and your connection."
+        default: error.localizedDescription
         }
     }
 }
@@ -424,8 +506,9 @@ private struct DataUseInfo {
     ], stored: [
         "The token, in your Mac's Keychain.",
         "Pull request titles, repositories and links in your history on this Mac, for up to a year.",
+        "Disconnecting deletes the token from this Mac. To end a sign-in completely, also revoke DevRings in GitHub's Settings › Applications.",
     ], never: [
-        "Writes to GitHub: the token only has read access to pull requests.",
+        "Writes to GitHub. Signing in needs GitHub's repo scope to read private repositories, which would allow writes, but DevRings only ever reads. A token can be strictly read-only.",
         "Reads code or diffs.",
         "Sends anything anywhere except GitHub. No analytics.",
     ])

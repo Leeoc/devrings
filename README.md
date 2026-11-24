@@ -34,7 +34,7 @@ Ten comments and two approvals on one MR count as one review. Rings only run on 
 ## Features
 
 - **Menu bar rings** drawn natively, with an animated popover showing what counted toward each ring. Each item opens in your browser.
-- **History**: a month calendar of mini rings. Click a day to see what you shipped, reviewed and moved. MRs that mention a Jira key link to the ticket, and tickets link back to the MRs that mention them.
+- **History**: a month calendar of mini rings. Click a day to see what you shipped, reviewed and moved. MRs and PRs that mention a Jira key link to the ticket, and tickets link back to the MRs that mention them.
 - **Trends**: weekly totals and how often you closed every ring.
 - **Awards**: 3D medals rendered in SceneKit. Hover to tilt them, and click to spin one over and see the date engraved on the back.
 - **Notifications**: a note when you close a ring, a nudge at 15:00 if one is still open, and a morning recap of your last working day with your streak and any awards. Each can be turned off or retimed in Settings › General.
@@ -59,7 +59,7 @@ Ten comments and two approvals on one MR count as one review. Rings only run on 
 
 - macOS 14 Sonoma or later
 - Swift 6 with the Command Line Tools. Full Xcode isn't needed.
-- A GitLab account (gitlab.com sign-in, or a personal access token with `read_api` for self-hosted), a GitHub account with a read-only token, or both
+- A GitLab account (gitlab.com sign-in, or a personal access token with `read_api` for self-hosted), a GitHub account (github.com sign-in, or a token for read-only access or Enterprise Server), or both
 - For the ticket ring, a Jira Cloud site with your email address and an API token
 
 ## Install
@@ -92,7 +92,7 @@ open build/DevRings.app
 On first launch a short welcome walks you through connecting accounts, working days and goals. You can reopen it from Settings › General, or set things up yourself in **Settings › Accounts**:
 
 - **GitLab:** click **Sign In with GitLab…**. A secure sign-in sheet opens, and if you're already signed in to gitlab.com in your browser it's a single click. DevRings asks only for `read_api`, uses OAuth with PKCE, and never holds a client secret. For self-hosted GitLab, choose **Use an access token instead**.
-- **GitHub:** click **Create Token** to open GitHub's fine-grained token page already filled in with read-only access to pull requests, set the resource owner to your organisation for work repositories, then paste the token. GitHub Enterprise Server works too. You can connect GitLab and GitHub together; both count toward the same rings.
+- **GitHub:** click **Sign In with GitHub…**. DevRings shows a one-time code and opens github.com, where you paste it and approve. GitHub only offers its `repo` scope for reading private repositories, which would also allow writes; DevRings only ever reads. For strictly read-only access, or GitHub Enterprise Server, choose **Use a token instead** and create a fine-grained token with read access to pull requests. You can connect GitLab and GitHub together; both count toward the same rings.
 - **Jira Cloud** (only needed for a ticket ring): enter your site (`your-team` is enough), your email and an [API token](https://id.atlassian.com/manage-profile/security/api-tokens). Atlassian doesn't offer app sign-in for Jira Cloud yet. Classic tokens work as they are; a scoped token needs `read:jira-work` and `read:jira-user`.
 
 Tokens are kept in your Keychain. Once a code host is connected, the app fills in your last 30 working days so History isn't empty on day one.
@@ -138,7 +138,7 @@ scripts/bundle.sh         Builds, renders the app icon, assembles and signs the 
 - A monthly challenge
 - A reveal animation for newly earned awards
 - Calendar-based time off (for example, all-day "OOO" events)
-- GitHub sign-in with the device flow, and a Linear provider
+- A Linear provider
 
 ## Contributing
 
