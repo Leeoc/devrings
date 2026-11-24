@@ -28,4 +28,8 @@ jobs:
       - name: Build
         run: swift build -c release --product DevRings
       - name: Test
-        run: swift run DevRingsCoreTests
+        run: |
+          # Newer Command Line Tools ship Swift Testing's interop library outside the framework rpath.
+          interop=$(find /Library/Developer/CommandLineTools -name lib_TestingInterop.dylib 2>/dev/null | head -1)
+          echo "Testing interop: ${interop:-not needed}"
+          DYLD_LIBRARY_PATH=${interop:+$(dirname "$interop")} swift run DevRingsCoreTests
