@@ -45,6 +45,8 @@ final class AppModel {
     private var pendingRefresh: Task<Void, Never>?
     let isFixture = CommandLine.arguments.contains("--fixture")
     let notifier = Notifier()
+    /// Set by the app delegate, so settings can reopen the welcome window.
+    var showOnboarding: () -> Void = {}
 
     static let historyDays = 365
     static let backfillDays = 30

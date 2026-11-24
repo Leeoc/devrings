@@ -27,7 +27,7 @@ struct RingsSettingsView: View {
     }
 }
 
-private struct GoalRow: View {
+struct GoalRow: View {
     let title: String
     let caption: String
     @Binding var goal: Int

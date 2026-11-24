@@ -39,6 +39,7 @@ public struct Settings: Codable, Hashable, Sendable {
     public var behindHour = 15
     public var behindMinute = 0
     public var notifyRecap = true
+    public var hasOnboarded = false
 
     public init() {}
 
@@ -60,5 +61,6 @@ public struct Settings: Codable, Hashable, Sendable {
         behindHour = try c.decodeIfPresent(Int.self, forKey: .behindHour) ?? d.behindHour
         behindMinute = try c.decodeIfPresent(Int.self, forKey: .behindMinute) ?? d.behindMinute
         notifyRecap = try c.decodeIfPresent(Bool.self, forKey: .notifyRecap) ?? d.notifyRecap
+        hasOnboarded = try c.decodeIfPresent(Bool.self, forKey: .hasOnboarded) ?? d.hasOnboarded
     }
 }
