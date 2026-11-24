@@ -8,7 +8,7 @@ public struct RingItem: Codable, Hashable, Sendable {
     public var ref: String
     public var title: String
     public var url: URL
-    /// Project path for MRs, project name for tickets.
+    /// Project path for MRs and PRs, project name for tickets.
     public var project: String?
     /// When it merged, or when you first reviewed it that day.
     public var date: Date?
@@ -24,7 +24,7 @@ public struct RingItem: Codable, Hashable, Sendable {
         self.status = status
     }
 
-    /// `!123` for MRs, the key for tickets.
+    /// `!123` for MRs, `#123` for PRs, the key for tickets.
     public var shortRef: String {
         ref.lastIndex { $0 == "!" || $0 == "#" }.map { String(ref[$0...]) } ?? ref
     }

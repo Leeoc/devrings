@@ -8,13 +8,13 @@ struct RingsSettingsView: View {
     var body: some View {
         Form {
             Section("Goals") {
-                GoalRow(title: "Ship", caption: "MRs merged", goal: $model.settings.setup.shipGoal)
-                GoalRow(title: "Review", caption: "teammates' MRs reviewed", goal: $model.settings.setup.reviewGoal)
+                GoalRow(title: "Ship", caption: "merged", goal: $model.settings.setup.shipGoal)
+                GoalRow(title: "Review", caption: "reviewed", goal: $model.settings.setup.reviewGoal)
             }
             Section {
                 Toggle("Ticket ring", isOn: Binding(
                     get: { model.settings.setup.ticket != nil },
-                    set: { model.settings.setup.ticket = $0 ? TicketRing(name: "Tech debt", goal: 2, filter: TicketFilter()) : nil }
+                    set: { model.settings.setup.ticket = $0 ? TicketRing(name: "Tickets", goal: 2, filter: TicketFilter()) : nil }
                 ))
             } footer: {
                 Text("A third ring for tickets you move in Jira, such as tech debt or bugs.")
@@ -132,7 +132,11 @@ private struct TicketRingEditor: View {
         } header: {
             Text("Filter")
         } footer: {
-            if let loadError { Text(loadError).foregroundStyle(.red) }
+            if let loadError {
+                Text(loadError).foregroundStyle(.red)
+            } else if ring.filter.jql == nil {
+                Text("Counting every ticket you move. Add labels, a project or an epic to narrow it.")
+            }
         }
         .onAppear { showAdvanced = ring.filter.rawJQL != nil }
     }
