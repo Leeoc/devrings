@@ -33,4 +33,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" "${{ steps.build.outputs.zip }}" --generate-notes \
-            --notes "Install with \`brew install --cask leeoc/tap/devrings\`. SHA-256: \`${{ steps.build.outputs.sha256 }}\`"
+            --notes "Install with \`brew trust --cask leeoc/tap/devrings && brew install --cask leeoc/tap/devrings\`. SHA-256: \`${{ steps.build.outputs.sha256 }}\`"

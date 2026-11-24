@@ -1,0 +1,30 @@
+name: Bug report
+description: Something in DevRings isn't working right.
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead. Screenshots help.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: DevRings version
+      description: Settings › General › Version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: macOS version
+      placeholder: macOS 15.4
+    validations:
+      required: true
+  - type: checkboxes
+    attributes:
+      label: Accounts connected
+      options:
+        - label: GitLab
+        - label: GitHub
+        - label: Jira
