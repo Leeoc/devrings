@@ -6,14 +6,47 @@ struct AccountsView: View {
 
     var body: some View {
         Form {
-            GitLabSection(model: model)
-            JiraSection(model: model)
+            if model.gitLab != nil || model.gitHub != nil || model.tracker != nil {
+                Section("Connected") {
+                    if model.gitLab != nil {
+                        AccountRow(provider: "GitLab", account: model.gitLabAccount,
+                                   detail: model.gitLabUsesOAuth ? "Signed in" : "Access token", dataUse: .gitLab) {
+                            model.disconnectGitLab()
+                        }
+                    }
+                    if model.gitHub != nil {
+                        AccountRow(provider: "GitHub", account: model.gitHubAccount, detail: "Access token", dataUse: .gitHub) {
+                            model.disconnectGitHub()
+                        }
+                    }
+                    if model.tracker != nil { JiraConnected(model: model) }
+                }
+            }
+            if model.gitLab == nil || model.gitHub == nil {
+                Section {
+                    if model.gitLab == nil { GitLabSetup(model: model) }
+                    if model.gitHub == nil { GitHubSetup(model: model) }
+                } header: {
+                    Text("Code")
+                } footer: {
+                    Text("Fills the Ship and Review rings. Connect one or both; they count toward the same rings.")
+                }
+            }
+            if model.tracker == nil {
+                Section {
+                    JiraSetup(model: model)
+                } header: {
+                    Text("Tickets")
+                } footer: {
+                    Text("Only needed for a ticket ring. Atlassian doesn't offer app sign-in for Jira yet, so DevRings uses an API token.")
+                }
+            }
         }
         .formStyle(.grouped)
     }
 }
 
-private struct GitLabSection: View {
+private struct GitLabSetup: View {
     let model: AppModel
     @State private var useToken = !GitLabOAuth.isConfigured
     @State private var host = "https://gitlab.com"
@@ -22,13 +55,7 @@ private struct GitLabSection: View {
     @State private var working = false
 
     var body: some View {
-        Section {
-            if model.codeHost != nil {
-                AccountRow(account: model.gitLabAccount,
-                           detail: model.gitLabUsesOAuth ? "Signed in with GitLab" : "Personal access token") {
-                    model.disconnectGitLab()
-                }
-            } else {
+        ProviderSetup(name: "GitLab", summary: "gitlab.com or self-hosted", error: error) {
                 if GitLabOAuth.isConfigured {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 2) {
@@ -52,28 +79,10 @@ private struct GitLabSection: View {
                         Button("Connect", action: connectWithToken)
                             .disabled(token.isEmpty || working)
                     }
+                    Text("For self-hosted GitLab, or if you'd rather not sign in. Needs the read_api scope.")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
-            }
-            DataUse(reads: [
-                "Your name, username and avatar, to show who's connected.",
-                "Merge requests you created and when they merged.",
-                "Your activity feed, to find teammates' merge requests you commented on or approved. Comment text isn't kept.",
-            ], stored: [
-                "The token, in your Mac's Keychain.",
-                "Merge request titles, projects and links in your history on this Mac, for up to a year.",
-            ], never: [
-                "Writes to GitLab: no comments, approvals or changes. The read_api scope can't.",
-                "Reads code or diffs.",
-                "Sends anything anywhere except your GitLab server. No analytics.",
-            ])
-        } header: {
-            Text("GitLab")
-        } footer: {
-            if let error {
-                Text(error).foregroundStyle(.red)
-            } else if model.codeHost == nil, useToken {
-                Text("For self-hosted GitLab, or if you'd rather not sign in. Needs the read_api scope.")
-            }
+                DataUse(.gitLab)
         }
     }
 
@@ -121,24 +130,91 @@ private struct GitLabSection: View {
     }
 }
 
-private struct JiraSection: View {
+private struct GitHubSetup: View {
+    let model: AppModel
+    @State private var host = "https://github.com"
+    @State private var token = ""
+    @State private var error: String?
+    @State private var working = false
+
+    var body: some View {
+        ProviderSetup(name: "GitHub", summary: "github.com or Enterprise Server", error: error) {
+                VStack(alignment: .leading, spacing: 6) {
+                    step(1, "Open GitHub's new token page, already filled in.") {
+                        if let url = tokenPage { Link("Create Token", destination: url).font(.callout) }
+                    }
+                    step(2, "For work repositories, set **Resource owner** to your organisation.")
+                    step(3, "Choose **Generate token**, then paste it below.")
+                    Text("It can only read pull requests. Some organisations approve new tokens before they work.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.leading, 26)
+                }
+                .padding(.vertical, 4)
+                LabeledContent("Token") {
+                    SecureField("Token", text: $token, prompt: Text("github_pat_…"))
+                        .labelsHidden()
+                }
+                DisclosureGroup("GitHub Enterprise Server") {
+                    TextField("Server", text: $host)
+                }
+                HStack {
+                    Spacer()
+                    if working { ProgressView().controlSize(.small) }
+                    Button("Connect", action: connect)
+                        .disabled(token.isEmpty || working)
+                }
+                DataUse(.gitHub)
+        }
+    }
+
+    private var tokenPage: URL? {
+        httpsURL(host)?.appending(path: "settings/personal-access-tokens/new").appending(queryItems: [
+            .init(name: "name", value: "DevRings"),
+            .init(name: "description", value: "Read-only: lets DevRings count the pull requests you merge and review."),
+            .init(name: "expires_in", value: "366"),
+            .init(name: "pull_requests", value: "read"),
+        ])
+    }
+
+    private func connect() {
+        guard let server = httpsURL(host) else {
+            error = "Enter the server's https:// address."
+            return
+        }
+        working = true
+        error = nil
+        Task {
+            defer { working = false }
+            do {
+                try await model.connectGitHub(GitHubCredentials(host: server, token: token.trimmingCharacters(in: .whitespacesAndNewlines)))
+                token = ""
+            } catch ProviderError.unauthorized {
+                error = "GitHub didn't accept that token. Check it hasn't expired and has read access to pull requests."
+            } catch is URLError {
+                error = "Couldn't reach \(server.host() ?? "GitHub"). Check the address and your connection."
+            } catch {
+                self.error = error.localizedDescription
+            }
+        }
+    }
+}
+
+private let atlassianTokenPage = URL(string: "https://id.atlassian.com/manage-profile/security/api-tokens")!
+
+private struct JiraSetup: View {
     let model: AppModel
     @State private var site = ""
     @State private var siteStatus: SiteStatus = .unknown
     @State private var email = ""
     @State private var token = ""
-    @State private var replacing = false
     @State private var error: String?
     @State private var working = false
 
     private enum SiteStatus { case unknown, checking, found, missing }
-    private static let tokenPage = URL(string: "https://id.atlassian.com/manage-profile/security/api-tokens")!
 
     var body: some View {
-        Section {
-            if model.tracker != nil {
-                connected
-            } else {
+        ProviderSetup(name: "Jira Cloud", summary: "For a ticket ring", error: error) {
                 steps
                 siteField
                 TextField("Email", text: $email, prompt: Text("The email you sign in to Atlassian with"))
@@ -154,34 +230,14 @@ private struct JiraSection: View {
                         .disabled(siteStatus == .missing || site.isEmpty || email.isEmpty || token.isEmpty || working)
                         .keyboardShortcut(.defaultAction)
                 }
-            }
-            DataUse(reads: [
-                "Your name and avatar, to show who's connected.",
-                "Tickets whose status you changed each day: key, summary, status and project.",
-                "Your site's labels, projects and open epics, to build the ticket ring filter.",
-            ], stored: [
-                "The token, in your Mac's Keychain.",
-                "Ticket keys, summaries and statuses in your history on this Mac, for up to a year.",
-            ], never: [
-                "Creates, edits or moves anything in Jira.",
-                "Reads descriptions, comments or attachments.",
-                "Sends anything anywhere except your Jira site. No analytics.",
-            ])
-        } header: {
-            Text("Jira Cloud")
-        } footer: {
-            if let error {
-                Text(error).foregroundStyle(.red)
-            } else if model.tracker == nil {
-                Text("Only needed for a ticket ring. Atlassian doesn't offer app sign-in for Jira yet, so DevRings uses an API token.")
-            }
+                DataUse(.jira)
         }
     }
 
     private var steps: some View {
         VStack(alignment: .leading, spacing: 6) {
             step(1, "Open your Atlassian API tokens page.") {
-                Link("Open API Tokens", destination: Self.tokenPage).font(.callout)
+                Link("Open API Tokens", destination: atlassianTokenPage).font(.callout)
             }
             step(2, "Choose **Create API token**, name it “DevRings” and pick when it expires.")
             step(3, "Copy the token, then paste it below with your site and email.")
@@ -193,18 +249,6 @@ private struct JiraSection: View {
         .padding(.vertical, 4)
     }
 
-    private func step(_ number: Int, _ text: LocalizedStringKey, @ViewBuilder trailing: () -> some View = { EmptyView() }) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text("\(number)")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.white)
-                .frame(width: 18, height: 18)
-                .background(Circle().fill(Color.accentColor))
-            Text(text)
-            Spacer(minLength: 8)
-            trailing()
-        }
-    }
 
     private var siteField: some View {
         LabeledContent("Site") {
@@ -226,37 +270,6 @@ private struct JiraSection: View {
             }
         }
         .task(id: site) { await checkSite() }
-    }
-
-    @ViewBuilder private var connected: some View {
-        AccountRow(account: model.jiraAccount, detail: model.jiraSite?.host() ?? "Jira Cloud") {
-            model.disconnectJira()
-        }
-        LabeledContent("Token", value: model.jiraConnection?.usesScopedToken == true ? "API token with scopes" : "API token")
-        if replacing {
-            LabeledContent("New token") {
-                SecureField("New token", text: $token, prompt: Text("Paste the new token")).labelsHidden()
-            }
-            HStack {
-                Link("Open API Tokens", destination: Self.tokenPage)
-                Spacer()
-                if working { ProgressView().controlSize(.small) }
-                Button("Cancel") {
-                    replacing = false
-                    token = ""
-                    error = nil
-                }
-                Button("Save", action: replaceToken)
-                    .disabled(token.isEmpty || working)
-                    .keyboardShortcut(.defaultAction)
-            }
-        } else {
-            HStack {
-                Text("Tokens expire. When yours does, swap in a new one here.").font(.callout).foregroundStyle(.secondary)
-                Spacer()
-                Button("Replace Token…") { replacing = true }
-            }
-        }
     }
 
     private func checkSite() async {
@@ -283,13 +296,6 @@ private struct JiraSection: View {
         }
     }
 
-    private func replaceToken() {
-        run {
-            try await model.replaceJiraToken(token.trimmingCharacters(in: .whitespacesAndNewlines))
-            replacing = false
-        }
-    }
-
     private func run(_ work: @escaping @MainActor () async throws -> Void) {
         working = true
         error = nil
@@ -309,21 +315,141 @@ private struct JiraSection: View {
     }
 }
 
-/// What an account lets DevRings see, kept short and specific.
-private struct DataUse: View {
-    let reads: [String]
-    let stored: [String]
-    let never: [String]
+private struct JiraConnected: View {
+    let model: AppModel
+    @State private var token = ""
+    @State private var replacing = false
+    @State private var error: String?
+    @State private var working = false
+
+    var body: some View {
+        AccountRow(provider: "Jira", account: model.jiraAccount,
+                   detail: [model.jiraSite?.host(), model.jiraConnection?.usesScopedToken == true ? "API token with scopes" : "API token"]
+                       .compactMap { $0 }.joined(separator: " · "),
+                   dataUse: .jira) {
+            model.disconnectJira()
+        }
+        if replacing {
+            LabeledContent("New token") {
+                SecureField("New token", text: $token, prompt: Text("Paste the new token")).labelsHidden()
+            }
+            HStack {
+                Link("Open API Tokens", destination: atlassianTokenPage)
+                Spacer()
+                if working { ProgressView().controlSize(.small) }
+                Button("Cancel") {
+                    replacing = false
+                    token = ""
+                    error = nil
+                }
+                Button("Save", action: replaceToken)
+                    .disabled(token.isEmpty || working)
+                    .keyboardShortcut(.defaultAction)
+            }
+        } else {
+            HStack {
+                Text("Tokens expire. When yours does, swap in a new one here.").font(.callout).foregroundStyle(.secondary)
+                Spacer()
+                Button("Replace Token…") { replacing = true }
+            }
+        }
+        if let error { Text(error).font(.callout).foregroundStyle(.red) }
+    }
+
+    private func replaceToken() {
+        working = true
+        error = nil
+        Task {
+            defer { working = false }
+            do {
+                try await model.replaceJiraToken(token.trimmingCharacters(in: .whitespacesAndNewlines))
+                token = ""
+                replacing = false
+            } catch ProviderError.unauthorized {
+                error = "Jira didn't accept that token. Check it's for the same Atlassian account and hasn't expired."
+            } catch {
+                self.error = error.localizedDescription
+            }
+        }
+    }
+}
+
+/// A provider you haven't connected yet: one line until opened.
+private struct ProviderSetup<Content: View>: View {
+    let name: String
+    let summary: String
+    let error: String?
+    @ViewBuilder let content: Content
     @State private var expanded = false
 
     var body: some View {
-        DisclosureGroup("What DevRings can see", isExpanded: $expanded) {
-            VStack(alignment: .leading, spacing: 12) {
-                group("Reads", symbol: "eye", tint: .blue, reads)
-                group("Keeps on this Mac", symbol: "lock", tint: .secondary, stored)
-                group("Never", symbol: "nosign", tint: .orange, never)
+        DisclosureGroup(isExpanded: $expanded) {
+            content
+            if let error { Text(error).font(.callout).foregroundStyle(.red) }
+        } label: {
+            HStack {
+                Text(name)
+                Spacer()
+                Text(summary).foregroundStyle(.secondary)
             }
-            .padding(.vertical, 6)
+        }
+    }
+}
+
+/// What an account lets DevRings see, kept short and specific.
+private struct DataUseInfo {
+    let reads: [String]
+    let stored: [String]
+    let never: [String]
+
+    static let gitLab = DataUseInfo(reads: [
+        "Your name, username and avatar, to show who's connected.",
+        "Merge requests you created and when they merged.",
+        "Your activity feed, to find teammates' merge requests you commented on or approved. Comment text isn't kept.",
+    ], stored: [
+        "The token, in your Mac's Keychain.",
+        "Merge request titles, projects and links in your history on this Mac, for up to a year.",
+    ], never: [
+        "Writes to GitLab: no comments, approvals or changes. The read_api scope can't.",
+        "Reads code or diffs.",
+        "Sends anything anywhere except your GitLab server. No analytics.",
+    ])
+
+    static let gitHub = DataUseInfo(reads: [
+        "Your name, username and avatar, to show who's connected.",
+        "Pull requests you opened and when they merged.",
+        "Reviews and comments you left on teammates' pull requests, and when. Comment text isn't kept.",
+    ], stored: [
+        "The token, in your Mac's Keychain.",
+        "Pull request titles, repositories and links in your history on this Mac, for up to a year.",
+    ], never: [
+        "Writes to GitHub: the token only has read access to pull requests.",
+        "Reads code or diffs.",
+        "Sends anything anywhere except GitHub. No analytics.",
+    ])
+
+    static let jira = DataUseInfo(reads: [
+        "Your name and avatar, to show who's connected.",
+        "Tickets whose status you changed each day: key, summary, status and project.",
+        "Your site's labels, projects and open epics, to build the ticket ring filter.",
+    ], stored: [
+        "The token, in your Mac's Keychain.",
+        "Ticket keys, summaries and statuses in your history on this Mac, for up to a year.",
+    ], never: [
+        "Creates, edits or moves anything in Jira.",
+        "Reads descriptions, comments or attachments.",
+        "Sends anything anywhere except your Jira site. No analytics.",
+    ])
+}
+
+private struct DataUseList: View {
+    let info: DataUseInfo
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            group("Reads", symbol: "eye", tint: .blue, info.reads)
+            group("Keeps on this Mac", symbol: "lock", tint: .secondary, info.stored)
+            group("Never", symbol: "nosign", tint: .orange, info.never)
         }
     }
 
@@ -338,10 +464,24 @@ private struct DataUse: View {
 }
 
 /// A signed-in account: avatar, name and handle, with Disconnect.
+private struct DataUse: View {
+    let info: DataUseInfo
+    init(_ info: DataUseInfo) { self.info = info }
+
+    var body: some View {
+        DisclosureGroup("What DevRings can see") {
+            DataUseList(info: info).padding(.vertical, 6)
+        }
+    }
+}
+
 private struct AccountRow: View {
+    let provider: String
     let account: AccountInfo?
     let detail: String
+    let dataUse: DataUseInfo
     let disconnect: () -> Void
+    @State private var showsDataUse = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -357,11 +497,21 @@ private struct AccountRow: View {
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(account?.name ?? "Checking…").font(.headline)
-                Text([account?.handle, detail].compactMap { $0 }.joined(separator: " · "))
+                Text([provider, account?.handle, detail].compactMap { $0 }.joined(separator: " · "))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            Button {
+                showsDataUse.toggle()
+            } label: {
+                Image(systemName: "info.circle")
+            }
+            .buttonStyle(.borderless)
+            .help("What DevRings can see")
+            .popover(isPresented: $showsDataUse, arrowEdge: .bottom) {
+                DataUseList(info: dataUse).padding().frame(width: 360)
+            }
             Button("Disconnect", action: disconnect)
         }
         .padding(.vertical, 2)
@@ -369,6 +519,20 @@ private struct AccountRow: View {
 
     private var initials: String {
         String((account?.name ?? "").split(separator: " ").prefix(2).compactMap(\.first))
+    }
+}
+
+@MainActor
+private func step(_ number: Int, _ text: LocalizedStringKey, @ViewBuilder trailing: () -> some View = { EmptyView() }) -> some View {
+    HStack(alignment: .firstTextBaseline, spacing: 8) {
+        Text("\(number)")
+            .font(.caption.weight(.bold))
+            .foregroundStyle(.white)
+            .frame(width: 18, height: 18)
+            .background(Circle().fill(Color.accentColor))
+        Text(text)
+        Spacer(minLength: 8)
+        trailing()
     }
 }
 

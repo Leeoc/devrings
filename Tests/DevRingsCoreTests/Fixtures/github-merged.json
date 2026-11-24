@@ -1,0 +1,5 @@
+{"data":{"search":{"nodes":[
+{"title":"Add retry to webhook sender","url":"https://github.com/acme/app/pull/41","number":41,"author":{"login":"dev"},"repository":{"nameWithOwner":"acme/app"},"mergedAt":"2026-07-14T09:00:00Z"},
+{"title":"Bump the client","url":"https://github.com/acme/api/pull/7","number":7,"author":{"login":"dev"},"repository":{"nameWithOwner":"acme/api"},"mergedAt":"2026-07-13T23:30:00Z"},
+{"title":"Late night fix","url":"https://github.com/acme/app/pull/42","number":42,"author":{"login":"dev"},"repository":{"nameWithOwner":"acme/app"},"mergedAt":"2026-07-14T23:30:00Z"}
+]}}}
