@@ -65,6 +65,7 @@ Ten comments and two approvals on one MR count as one review. Rings only run on 
 ## Install
 
 ```sh
+brew trust --cask leeoc/tap/devrings   # Homebrew asks you to trust casks from other people's taps
 brew install --cask leeoc/tap/devrings
 ```
 
