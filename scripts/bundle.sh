@@ -1,5 +1,6 @@
 #!/bin/bash
-# Builds DevRings.app into build/ and ad-hoc signs it (UserNotifications and SMAppService need a signed bundle).
+# Builds DevRings.app into build/ and signs it (UserNotifications and SMAppService need a signed bundle).
+# Uses the "DevRings Dev" certificate from scripts/dev-cert.sh when it's there, otherwise signs ad hoc.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -31,5 +32,7 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-codesign --force --sign - "$app"
+identity=-
+if security find-certificate -c "DevRings Dev" >/dev/null 2>&1; then identity="DevRings Dev"; fi
+codesign --force --sign "$identity" "$app"
 echo "$app"
