@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Use the Command Line Tools
+        run: sudo xcode-select --switch /Library/Developer/CommandLineTools
+      - name: Test
+        run: swift run DevRingsCoreTests
+      - name: Build the release zip
+        id: build
+        run: |
+          out=$(scripts/release.sh "$GITHUB_REF_NAME")
+          echo "zip=$(echo "$out" | sed -n 1p)" >> "$GITHUB_OUTPUT"
+          echo "sha256=$(echo "$out" | sed -n 2p)" >> "$GITHUB_OUTPUT"
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "${{ steps.build.outputs.zip }}" --generate-notes \
+            --notes "Install with \`brew install --cask leeoc/tap/devrings\`. SHA-256: \`${{ steps.build.outputs.sha256 }}\`"
